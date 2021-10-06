@@ -11,13 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package jbuildfs.core;
+package jbfs.core;
 
 import java.util.List;
 import java.util.function.Function;
 
-import jbuildfs.util.Pair;
-import jbuildfs.util.Trie;
+import jbfs.util.Pair;
+import jbfs.util.Trie;
 
 public interface Build {
 
@@ -141,4 +141,51 @@ public interface Build {
 	 */
 	public interface Task extends Artifact, Function<SnapShot, Pair<SnapShot, Boolean>> {
 	}
+	
+	/**
+	 * Responsible for recording detailed progress of a given task for both
+	 * informational and profiling purposes. For example, providing feedback on
+	 * expected time to completion in an IDE. Or, providing detailed feedback on
+	 * number of steps executed by key components in a given task, etc.
+	 *
+	 * @author David J. Pearce
+	 */
+	public interface Meter {
+		/**
+		 * Create subtask of current task with a given name.
+		 *
+		 * @return
+		 */
+		public Meter fork(String name);
+
+		/**
+		 * Record an arbitrary step taking during this subtask for profiling purposes.
+		 *
+		 * @param tag
+		 */
+		public void step(String tag);
+
+		/**
+		 * Current (sub)task has completed.
+		 */
+		public void done();
+	}
+	
+	public static final Build.Meter NULL_METER = new Build.Meter() {
+
+		@Override
+		public Meter fork(String name) {
+			return NULL_METER;
+		}
+
+		@Override
+		public void step(String tag) {
+
+		}
+
+		@Override
+		public void done() {
+		}
+
+	};
 }

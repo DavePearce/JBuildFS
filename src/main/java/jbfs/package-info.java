@@ -19,4 +19,4 @@
  *
  * @author David J. Pearce
  */
-package jbuildfs;
+package jbfs;

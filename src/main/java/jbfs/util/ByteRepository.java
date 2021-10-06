@@ -1,4 +1,4 @@
-package jbuildfs.util;
+package jbfs.util;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import jbuildfs.core.Build;
-import jbuildfs.core.Content;
-import jbuildfs.core.Build.Transaction;
-import jbuildfs.core.Content.Registry;
+import jbfs.core.Build;
+import jbfs.core.Content;
+import jbfs.core.Build.Transaction;
+import jbfs.core.Content.Registry;
 
 public class ByteRepository implements Build.Repository {
 	private final Content.Registry registry;
