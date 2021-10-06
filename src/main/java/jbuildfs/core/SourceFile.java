@@ -16,7 +16,7 @@ package jbuildfs.core;
 import java.util.Collections;
 import java.util.List;
 
-import jcontent.util.Trie;
+import jbuildfs.util.Trie;
 
 public abstract class SourceFile implements Build.Artifact {
     private final Trie id;

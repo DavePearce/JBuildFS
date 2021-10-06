@@ -16,9 +16,8 @@ package jbuildfs.core;
 import java.util.List;
 import java.util.function.Function;
 
-import jcontent.core.Content;
-import jcontent.util.Pair;
-import jcontent.util.Trie;
+import jbuildfs.util.Pair;
+import jbuildfs.util.Trie;
 
 public interface Build {
 

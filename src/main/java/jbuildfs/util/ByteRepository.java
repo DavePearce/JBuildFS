@@ -7,11 +7,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jbuildfs.core.Build;
+import jbuildfs.core.Content;
 import jbuildfs.core.Build.Transaction;
-import jcontent.core.Content;
-import jcontent.core.Content.Registry;
-import jcontent.util.Pair;
-import jcontent.util.Trie;
+import jbuildfs.core.Content.Registry;
 
 public class ByteRepository implements Build.Repository {
 	private final Content.Registry registry;

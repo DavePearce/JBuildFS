@@ -1,4 +1,4 @@
-package jcontent.util;
+package jbuildfs.util;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -6,9 +6,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 
-import jcontent.core.Content;
-import jcontent.core.Content.Root;
-import jcontent.core.Content.Type;
+import jbuildfs.core.Content;
+import jbuildfs.core.Content.Root;
+import jbuildfs.core.Content.Type;
 
 /**
  * Provides an implementation of <code>Content.Source</code>
