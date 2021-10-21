@@ -120,9 +120,9 @@ public class ZipFile implements Content, Content.Source {
 		return registry;
 	}
 
-//	public void add(ZipEntry entry, byte[] bytes) {
-//		this.entries.add(new Entry(entry,bytes));
-//	}
+	public <T extends Content> void add(Content.Type<T> ct, Trie path, byte[] bytes) {
+		this.entries.add(new Entry<T>(ct,path,bytes));
+	}
 
 	/**
 	 * Get the ith entry in this ZipFile.
