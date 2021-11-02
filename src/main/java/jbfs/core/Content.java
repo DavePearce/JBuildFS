@@ -202,7 +202,7 @@ public interface Content {
 		public void remove(Trie p, Content.Type<?> type);
 
 		/**
-		 * Get the content regsitry associated with this sink.
+		 * Get the content registry associated with this sink.
 		 *
 		 * @return
 		 */
@@ -282,7 +282,7 @@ public interface Content {
 	};
 
 	public static <T extends Content> Filter<T> Filter(Content.Type<T> ct, Trie path) {
-		return new Content.Filter<T>() {
+		return new Content.Filter<>() {
 
 			@Override
 			public boolean includes(Type<?> c, Trie p) {
