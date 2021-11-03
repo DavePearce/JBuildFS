@@ -65,13 +65,6 @@ public interface Content {
 	 */
 	public interface Type<T> {
 		/**
-		 * Get the suffix associated with this content type
-		 *
-		 * @return
-		 */
-		public String getSuffix();
-
-		/**
 		 * Physically read the raw bytes from a given input stream and convert into the
 		 * format described by this content type.
 		 *

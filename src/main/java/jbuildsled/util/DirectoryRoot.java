@@ -17,12 +17,10 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jbuildsled.core.Content;
-import jbuildsled.core.Content.Root;
-import jbuildsled.core.Content.Type;
+import jbuildsled.core.Key;
 
 /**
  * Provides an implementation of <code>Content.Source</code>
@@ -40,15 +38,15 @@ public class DirectoryRoot<K, V extends Content> implements Content.Root<K, V>, 
 	};
 	private final File dir;
 	private final FileFilter filter;
-	private final Function<String, Pair<Type<?>, K>> decoder;
+	private final Key.EncoderDecoder<K, V, String> encdec;
 	private final ArrayList<Entry<V>> items;
 
-	public DirectoryRoot(Function<String, Pair<Type<?>, K>> decoder, File dir) throws IOException {
-		this(decoder, dir, NULL_FILTER);
+	public DirectoryRoot(Key.EncoderDecoder<K, V, String> encdec, File dir) throws IOException {
+		this(encdec, dir, NULL_FILTER);
 	}
 
-	public DirectoryRoot(Function<String, Pair<Type<?>, K>> decoder, File dir, FileFilter filter) throws IOException {
-		this.decoder = decoder;
+	public DirectoryRoot(Key.EncoderDecoder<K, V, String> encdec, File dir, FileFilter filter) throws IOException {
+		this.encdec = encdec;
 		this.dir = dir;
 		this.filter = filter;
 		this.items = initialise(dir, filter);
@@ -119,14 +117,15 @@ public class DirectoryRoot<K, V extends Content> implements Content.Root<K, V>, 
 			// Construct filename
 			String filename = root.relativize(f.toPath()).toString().replace(File.separatorChar, '/');
 			// Decode filename into path and content type.
-			Pair<Type<?>, K> p = decoder.apply(filename);
+			K key = encdec.decodeKey(filename);
+			Content.Type<V> ct = encdec.decodeType(filename);
 			// Check whether this file is recognised or not
-			if (p != null) {
+			if (ct != null) {
 				// Search for this item
 				boolean matched = false;
 				for (int i = 0; i != items.size(); ++i) {
 					Entry<?> ith = items.get(i);
-					if (ith.getPath().equals(p.second()) && ith.getContentType() == p.first()) {
+					if (ith.getPath().equals(key) && ith.getContentType() == ct) {
 						matched = true;
 						break;
 					}
@@ -245,12 +244,12 @@ public class DirectoryRoot<K, V extends Content> implements Content.Root<K, V>, 
 			File ith = files.get(i);
 			String filename = root.relativize(ith.toPath()).toString().replace(File.separatorChar, '/');
 			// Decode filename into path and content type.
-			Pair<Type<?>, K> p = decoder.apply(filename);
-			if (p != null) {
-				// Decoding was successfull!
-				Content.Type ct = p.first();
+			// Decode filename into path and content type.
+			K key = encdec.decodeKey(filename);
+			Content.Type<V> ct = encdec.decodeType(filename);
+			if (key != null) {
 				// Create lazy artifact
-				entries.add(new Entry<V>(p.second(), ct));
+				entries.add(new Entry<>(key, ct));
 			}
 		}
 		// Done
@@ -268,11 +267,11 @@ public class DirectoryRoot<K, V extends Content> implements Content.Root<K, V>, 
 	 *
 	 * @param <S>
 	 */
-	private class Entry<S> {
+	private class Entry<S extends V> {
 		/**
 		 * The repository path to which this entry corresponds.
 		 */
-		private final K path;
+		private final K key;
 		/**
 		 * The content type of this entry
 		 */
@@ -287,14 +286,14 @@ public class DirectoryRoot<K, V extends Content> implements Content.Root<K, V>, 
 		 */
 		private S value;
 
-		public Entry(K path, Content.Type<S> contentType) {
-			this.path = path;
+		public Entry(K key, Content.Type<S> contentType) {
+			this.key = key;
 			this.contentType = contentType;
 			this.dirty = false;
 		}
 
 		public K getPath() {
-			return path;
+			return key;
 		}
 
 		public Content.Type<S> getContentType() {
@@ -343,7 +342,7 @@ public class DirectoryRoot<K, V extends Content> implements Content.Root<K, V>, 
 		}
 
 		private File getFile() {
-			String filename = path.toString().replace("/", File.separator) + "." + contentType.getSuffix();
+			String filename = encdec.encode(contentType, key);
 			// Done.
 			return new File(dir, filename);
 		}
