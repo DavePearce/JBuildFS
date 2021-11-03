@@ -1,3 +1,11 @@
+##### Table of Contents
+
+1. [Overview](#overview)
+1. [Content](#content)
+   1. [Sources](#sources)
+   1. [Sinks](#sinks)
+   1. [Roots](#roots)
+
 ## Overview
 
 `JBuildSled` is a library for implementing [key-value
@@ -73,15 +81,14 @@ Note that, when reading in structure content, it is often useful to
 know its key-value and this is given by the `id` parameter.  In this
 particular case, we don't actually care that much about it.
 
-### Sources & Sinks
+#### Sources
 
 A content source is an instance of `Content.Source`, and provides an
-API for reading structured content out of a store.  A content sink is
-an instance of `Content.Sink`, and provides an API for writing
-structured content into the store.  Content sources and sinks are
-hierarchically structured into a tree-like organisation (roughly
-similar to that of a file system).  The following illustrates a simple
-method for reading a `Point` out of an arbitrary source:
+API for reading structured content out of a store.  Content sources
+(and sinks) are hierarchically structured into a tree-like
+organisation (roughly similar to that of a file system).  The
+following illustrates a simple method for reading a `Point` out of an
+arbitrary source:
 
 ```Java
  public static Point read(Content.Source source) throws IOException {
@@ -91,8 +98,13 @@ method for reading a `Point` out of an arbitrary source:
 ```
 
 This reads an instance of `Point` from the location `test/point` in
-the given source.  Likewise, the following illustrates writing a piece
-of structured content into the store:
+the given source.
+
+#### Sinks
+
+A content sink is an instance of `Content.Sink`, and provides an API
+for writing structured content into the store.  The following
+illustrates writing a piece of structured content into the store:
 
 ```Java
  public static void write(Content.Sink sink, Point pt) throws IOException {
@@ -106,7 +118,7 @@ if `Point` were mutable, then any _changes to point after the write
 would not be visible in the store_.  Generally speaking, we encourage
 the use of immutable classes for implementing structure content.
 
-### Roots
+#### Roots
 
 A content root is an instance of `Content.Root` which means it is both
 a `Content.Source` and `Content.Sink`.  In other words, its an
