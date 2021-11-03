@@ -31,17 +31,17 @@ import jbuildsled.core.Content.Type;
  * @author David J. Pearce
  *
  */
-public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
+public class DirectoryRoot<K, V extends Content> implements Content.Root<K, V>, Iterable<V> {
 	public final static FileFilter NULL_FILTER = new FileFilter() {
 		@Override
 		public boolean accept(File file) {
 			return true;
 		}
 	};
-    private final File dir;
-    private final FileFilter filter;
-    private final Function<String, Pair<Type<?>, K>> decoder;
-    private final ArrayList<Entry<?>> items;
+	private final File dir;
+	private final FileFilter filter;
+	private final Function<String, Pair<Type<?>, K>> decoder;
+	private final ArrayList<Entry<V>> items;
 
 	public DirectoryRoot(Function<String, Pair<Type<?>, K>> decoder, File dir) throws IOException {
 		this(decoder, dir, NULL_FILTER);
@@ -56,12 +56,12 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <S extends Content> S get(Content.Type<S> kind, K p) {
+	public <T extends V> T get(Content.Type<T> kind, K key) {
 		for (int i = 0; i != items.size(); ++i) {
-			Entry<?> ith = items.get(i);
+			Entry<V> ith = items.get(i);
 			Content.Type<?> ct = ith.getContentType();
-			if (ith.getPath().equals(p) && ct == kind) {
-				return (S) ith.get();
+			if (ith.getPath().equals(key) && ct == kind) {
+				return (T) ith.get();
 			}
 		}
 		return null;
@@ -69,19 +69,19 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <S extends Content> List<S> getAll(Content.Filter<K,S> filter) {
-		ArrayList<S> rs = new ArrayList<>();
+	public <T extends V> List<T> getAll(Content.Filter<K, T> filter) {
+		ArrayList<T> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
-			Entry<?> ith = items.get(i);
+			Entry<V> ith = items.get(i);
 			if (filter.includes(ith.getContentType(), ith.getPath())) {
-				rs.add((S) ith.get());
+				rs.add((T) ith.get());
 			}
 		}
 		return rs;
 	}
 
 	@Override
-	public List<K> match(Content.Filter<K,?> filter) {
+	public List<K> match(Content.Filter<K, ?> filter) {
 		ArrayList<K> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry<?> ith = items.get(i);
@@ -94,7 +94,7 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <S extends Content> List<K> match(Content.Filter<K,S> filter, Predicate<S> f) {
+	public <S> List<K> match(Content.Filter<K, S> filter, Predicate<S> f) {
 		ArrayList<K> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry<?> ith = items.get(i);
@@ -115,7 +115,7 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 		final java.nio.file.Path root = dir.toPath();
 		// FIXME: bug here if root created with specific file filter
 		List<File> files = findAll(64, dir, filter, new ArrayList<>());
-		for(File f : files) {
+		for (File f : files) {
 			// Construct filename
 			String filename = root.relativize(f.toPath()).toString().replace(File.separatorChar, '/');
 			// Decode filename into path and content type.
@@ -146,17 +146,18 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 	}
 
 	@Override
-	public Iterator<Content> iterator() {
+	public Iterator<V> iterator() {
 		// Add wrapping iterator which forces loading of artifacts.
 		return new Iterator<>() {
 			int index = 0;
+
 			@Override
 			public boolean hasNext() {
 				return index < items.size();
 			}
 
 			@Override
-			public Content next() {
+			public V next() {
 				return items.get(index++).get();
 			}
 
@@ -165,7 +166,7 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public void put(K key, Content value) {
+	public void put(K key, V value) {
 		// NOTE: yes, there is unsafe stuff going on here because we cannot easily type
 		// this in Java.
 		Content.Type ct = value.getContentType();
@@ -178,7 +179,7 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 				return;
 			}
 		}
-		Entry<Content> e = new Entry<>(key, ct);
+		Entry<V> e = new Entry<>(key, ct);
 		e.set(value);
 		// Create new entry
 		items.add(e);
@@ -198,19 +199,19 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 		// Done
 	}
 
-    /**
-     * Get the root directory where this repository starts from.
-     *
-     * @return
-     */
-    public File getDirectory() {
-        return dir;
-    }
+	/**
+	 * Get the root directory where this repository starts from.
+	 *
+	 * @return
+	 */
+	public File getDirectory() {
+		return dir;
+	}
 
-    @Override
+	@Override
 	public String toString() {
-    	String r = "{";
-    	boolean firstTime = true;
+		String r = "{";
+		boolean firstTime = true;
 		for (Entry<?> f : items) {
 			if (!firstTime) {
 				r += ",";
@@ -218,10 +219,10 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 			r += f.getPath();
 			firstTime = false;
 		}
-    	return r + "}";
-    }
+		return r + "}";
+	}
 
-    /**
+	/**
 	 * Construct the initial listing of files from the contents of the build
 	 * directory. Observe that this does not load the files, but rather returns a
 	 * list of "place holders".
@@ -232,13 +233,13 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 	 * @return
 	 * @throws IOException
 	 */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-	private ArrayList<Entry<?>> initialise(File dir, FileFilter filter) throws IOException {
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private ArrayList<Entry<V>> initialise(File dir, FileFilter filter) throws IOException {
 		java.nio.file.Path root = dir.toPath();
 		// First extract all files rooted in this directory
 		List<File> files = findAll(64, dir, filter, new ArrayList<>());
 		// Second convert them all into entries as appropriate
-		ArrayList<Entry<?>> entries = new ArrayList<>();
+		ArrayList<Entry<V>> entries = new ArrayList<>();
 		//
 		for (int i = 0; i != files.size(); ++i) {
 			File ith = files.get(i);
@@ -249,14 +250,14 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 				// Decoding was successfull!
 				Content.Type ct = p.first();
 				// Create lazy artifact
-				entries.add(new Entry(p.second(), ct));
+				entries.add(new Entry<V>(p.second(), ct));
 			}
 		}
 		// Done
 		return entries;
-    }
+	}
 
-    /**
+	/**
 	 * An entry within this root which corresponds (in theory) to an entry on disk.
 	 * The content of an entry is loaded lazily on demand since, in general, this
 	 * may involve a complex operation (e.g. decoding a structured file). An entry
@@ -267,7 +268,7 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 	 *
 	 * @param <S>
 	 */
-	private class Entry<S extends Content> {
+	private class Entry<S> {
 		/**
 		 * The repository path to which this entry corresponds.
 		 */
@@ -315,7 +316,7 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 		}
 
 		public void set(S value) {
-			if(this.value != value) {
+			if (this.value != value) {
 				this.dirty = true;
 				this.value = value;
 			}
@@ -342,31 +343,31 @@ public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 		}
 
 		private File getFile() {
-	        String filename = path.toString().replace("/", File.separator) + "." + contentType.getSuffix();
-	        // Done.
-	        return new File(dir, filename);
+			String filename = path.toString().replace("/", File.separator) + "." + contentType.getSuffix();
+			// Done.
+			return new File(dir, filename);
 		}
 	}
 
-    /**
-     * Extract all files starting from a given directory.
-     *
-     * @param dir
-     * @return
-     */
-    private static List<File> findAll(int n, File dir, FileFilter filter, List<File> files) {
-        if (n > 0 && dir.exists() && dir.isDirectory()) {
-            File[] contents = dir.listFiles(filter);
-            for (int i = 0; i != contents.length; ++i) {
-                File ith = contents[i];
-                //
-                if (ith.isDirectory()) {
-                    findAll(n - 1, ith, filter, files);
-                } else {
-                    files.add(ith);
-                }
-            }
-        }
-        return files;
-    }
+	/**
+	 * Extract all files starting from a given directory.
+	 *
+	 * @param dir
+	 * @return
+	 */
+	private static List<File> findAll(int n, File dir, FileFilter filter, List<File> files) {
+		if (n > 0 && dir.exists() && dir.isDirectory()) {
+			File[] contents = dir.listFiles(filter);
+			for (int i = 0; i != contents.length; ++i) {
+				File ith = contents[i];
+				//
+				if (ith.isDirectory()) {
+					findAll(n - 1, ith, filter, files);
+				} else {
+					files.add(ith);
+				}
+			}
+		}
+		return files;
+	}
 }
