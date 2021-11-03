@@ -92,16 +92,26 @@ following illustrates a simple method for reading a `Point` out of an
 arbitrary source:
 
 ```Java
- public static Point read(Content.Source source) throws IOException {
-   Trie id = Trie.fromString("test");
-   return source.get(Point.ContentType, id);
- }
+Point read(Content.Source source) throws IOException {
+  Trie id = Trie.fromString("test");
+  return source.get(Point.ContentType, id);
+}
 ```
 
 This reads an instance of `Point` from the location `test/point` in
 the given source.
 
-Sources can be _queried_.
+Sources can be _queried_ arbitrarily using instances of
+`Content.Filter` as follows:
+
+```Java
+List<Point> select(Content.Source source, Content.Filter<Point> query) throws IOException {
+    return source.getAll(query);
+}
+```
+
+This method returns a list of all matching `Point` instances in the
+given source.
 
 #### Sinks
 
@@ -110,10 +120,10 @@ for writing structured content into the store.  The following
 illustrates writing a piece of structured content into the store:
 
 ```Java
- public static void write(Content.Sink sink, Point pt) throws IOException {
-    Trie id = Trie.fromString("test");
-    sink.put(id, pt);
- }
+void write(Content.Sink sink, Point pt) throws IOException {
+  Trie id = Trie.fromString("test");
+  sink.put(id, pt);
+}
 ```
 
 Again, this writes our `Point` instance into the store.  Observe that
