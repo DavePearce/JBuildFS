@@ -27,6 +27,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import jbuildsled.core.Content;
+import jbuildsled.core.Key;
 import jbuildsled.core.Content.Type;
 
 /**
@@ -39,25 +40,20 @@ import jbuildsled.core.Content.Type;
 public class ZipFile<K, V extends Content> implements Content, Content.Source<K, V> {
 
 	public static <K, V extends Content> Content.Type<ZipFile<K, V>> ContentType(
-			Function<String, Pair<Type<V>, K>> decoder) {
+			Key.EncoderDecoder<K, V, String> encdec) {
 		return new Content.Type<>() {
 			@Override
-			public String getSuffix() {
-				return "zip";
-			}
-
-			@Override
 			public ZipFile<K,V> read(InputStream input) throws IOException {
-				return new ZipFile<>(this, decoder, input);
+				return new ZipFile<>(this, encdec, input);
 			}
 
 			@Override
 			public void write(OutputStream output, ZipFile<K,V> zf) throws IOException {
 				ZipOutputStream zout = new ZipOutputStream(output);
 				for (int i = 0; i != zf.size(); ++i) {
-					ZipFile.Entry<K,?> e = zf.get(i);
+					ZipFile.Entry<K,V> e = zf.get(i);
 					// Create filename
-					String filename = e.key.toString() + "." + e.contentType.getSuffix();
+					String filename = encdec.encode(e.contentType, e.key);
 					zout.putNextEntry(new ZipEntry(filename));
 					zout.write(e.bytes);
 					zout.closeEntry();
@@ -90,7 +86,7 @@ public class ZipFile<K, V extends Content> implements Content, Content.Source<K,
 	 *
 	 * @param input
 	 */
-	public ZipFile(Content.Type<?> contentType, Function<String, Pair<Type<V>, K>> decoder, InputStream input)
+	public ZipFile(Content.Type<?> contentType, Key.EncoderDecoder<K, V, String> encdec, InputStream input)
 			throws IOException {
 		this.contentType = contentType;
 		this.entries = new ArrayList<>();
@@ -99,8 +95,10 @@ public class ZipFile<K, V extends Content> implements Content, Content.Source<K,
 		ZipEntry e;
 		while ((e = zin.getNextEntry()) != null) {
 			byte[] contents = readEntryContents(zin);
-			Pair<Type<V>, K> p = decoder.apply(e.getName());
-			entries.add(new Entry<>(p.first(), p.second(), contents));
+			// Decode filename into path and content type.
+			K key = encdec.decodeKey(e.getName());
+			Content.Type<V> ct = encdec.decodeType(e.getName());
+			entries.add(new Entry<>(ct, key, contents));
 			zin.closeEntry();
 		}
 		zin.close();
@@ -125,7 +123,7 @@ public class ZipFile<K, V extends Content> implements Content, Content.Source<K,
 	 * @param i
 	 * @return
 	 */
-	public Entry<K,?> get(int i) {
+	public Entry<K,V> get(int i) {
 		return entries.get(i);
 	}
 
