@@ -4,12 +4,10 @@
   <!-- Configuration -->
   <!-- ============================================== -->  
   
-  
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.whiley</groupId>
-  <artifactId>jbuildfs</artifactId>
-  <version>1.1.0</version>
-
+  <artifactId>jbuildsled</artifactId>
+  <version>0.1.0</version>
 
   <licenses>
     <license>
@@ -19,20 +17,20 @@
     </license>
   </licenses>
 
-
   <!-- ============================================== -->
   <!-- Description -->
   <!-- ============================================== -->  
 
   <name>Java Build Filesystem</name>
   <description>
-    A small library a compiler file system.
+A library for implementing key-value stores that supports specific
+features for building compilers.
   </description>
 
-  <url>https://github.com/DavePearce/JBuildFS</url>
+  <url>https://github.com/DavePearce/JBuildSled</url>
   
   <scm>
-    <url>https://github.com/DavePearce/JBuildFS</url>
+    <url>https://github.com/DavePearce/JBuildSled</url>
   </scm>
 
   <developers>

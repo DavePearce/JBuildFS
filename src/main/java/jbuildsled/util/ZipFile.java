@@ -1,4 +1,4 @@
-// Copyright 2011 The Whiley Project Developers
+// Copyright 2021 David James Pearce
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package jbfs.util;
+package jbuildsled.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -25,7 +25,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import jbfs.core.Content;
+import jbuildsled.core.Content;
 
 /**
  * A shim for handling ZipFiles in a uniform fashion within the Whiley File
@@ -36,7 +36,7 @@ import jbfs.core.Content;
  */
 public class ZipFile implements Content, Content.Source {
 
-	public static Content.Type<ZipFile> ContentType = new Content.Type<ZipFile>() {
+	public static Content.Type<ZipFile> ContentType = new Content.Type<>() {
 		@Override
 		public String getSuffix() {
 			return "zip";
@@ -121,7 +121,7 @@ public class ZipFile implements Content, Content.Source {
 	}
 
 	public <T extends Content> void add(Content.Type<T> ct, Trie path, byte[] bytes) {
-		this.entries.add(new Entry<T>(ct,path,bytes));
+		this.entries.add(new Entry<>(ct,path,bytes));
 	}
 
 	/**
