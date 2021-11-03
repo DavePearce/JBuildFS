@@ -52,7 +52,6 @@ class Point implements Shape {
         ois.writeInt(value.y);
       }
     }
-
   };
 
   public final int x;
@@ -64,7 +63,7 @@ class Point implements Shape {
   }
 
   @Override
-  public Type<?> getContentType() {
+  public Type<Point> getContentType() {
     return ContentType;
   }
 }
@@ -86,7 +85,7 @@ following illustrates a simple method for reading a `Point` out of an
 arbitrary source:
 
 ```Java
-Point read(Content.Source<String,Shape> source) throws IOException {
+Point read(Source<String,Shape> source) throws IOException {
     return source.get(Point.ContentType, "test");
 }
 ```
@@ -100,7 +99,7 @@ Sources can be _queried_ arbitrarily using instances of
 `Content.Filter` as follows:
 
 ```Java
-List<Point> select(Content.Source source, Content.Filter<Point> query) throws IOException {
+List<Point> select(Source<String,Shape> source, Filter<Point> query) throws IOException {
     return source.getAll(query);
 }
 ```
@@ -115,7 +114,7 @@ for writing structured content into the store.  The following
 illustrates writing a piece of structured content into the store:
 
 ```Java
-void write(Content.Sink<String,Shape> sink, Point pt) throws IOException {
+void write(Sink<String,Shape> sink, Point pt) throws IOException {
     sink.put("test", pt);
 }
 ```
