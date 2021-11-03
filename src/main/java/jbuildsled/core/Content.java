@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import jbuildsled.util.Trie;
-
 
 /**
  * Provides various interfaces for mapping the structured content held in memory
@@ -47,14 +45,14 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Filter<T extends Content> {
+	public interface Filter<K,T extends Content> {
 		/**
 		 * Check whether this filter includes a given content type
 		 *
 		 * @param ct Content Type to check for inclusion.
 		 * @return
 		 */
-		public boolean includes(Content.Type<?> ct, Trie p);
+		public boolean includes(Type<?> ct, K p);
 	}
 
 	/**
@@ -78,14 +76,13 @@ public interface Content {
 		 * Physically read the raw bytes from a given input stream and convert into the
 		 * format described by this content type.
 		 *
-		 * @param id       Name of this entry.
 		 * @param input    Input stream representing in the format described by this
 		 *                 content type.
 		 * @param registry Content registry to be used for creating content within the
 		 *                 given type.
 		 * @return
 		 */
-		public T read(Trie id, InputStream input, Content.Registry registry) throws IOException;
+		public T read(InputStream input) throws IOException;
 
 		/**
 		 * Convert an object in the format described by this content type into
@@ -105,16 +102,16 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Source {
+	public interface Source<K> {
 		/**
 		 * Get a given piece of content from this source.
 		 *
 		 * @param <T>
 		 * @param kind
-		 * @param p
+		 * @param key
 		 * @return
 		 */
-		public <T extends Content> T get(Content.Type<T> kind, Trie p) throws IOException;
+		public <T extends Content> T get(Type<T> kind, K key) throws IOException;
 
 		/**
 		 * Get a given piece of content from this source.
@@ -124,7 +121,7 @@ public interface Content {
 		 * @param p
 		 * @return
 		 */
-		public <T extends Content> List<T> getAll(Content.Filter<T> filter) throws IOException;
+		public <T extends Content> List<T> getAll(Content.Filter<K,T> filter) throws IOException;
 
 		/**
 		 * Find all content matching a given filter.
@@ -134,7 +131,7 @@ public interface Content {
 		 * @param f
 		 * @return
 		 */
-		public List<Trie> match(Content.Filter<? extends Content> filter);
+		public List<K> match(Content.Filter<K,? extends Content> filter);
 
 		/**
 		 * Find all content matching a given predicate.
@@ -144,14 +141,7 @@ public interface Content {
 		 * @param p
 		 * @return
 		 */
-		public <T extends Content> List<Trie> match(Content.Filter<T> ct, Predicate<T> p);
-
-		/**
-		 * Get the content regsitry associated with this source.
-		 *
-		 * @return
-		 */
-		public Registry getContentRegistry();
+		public <T extends Content> List<K> match(Content.Filter<K,T> ct, Predicate<T> p);
 	}
 
 	/**
@@ -163,7 +153,7 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Ledger extends Source {
+	public interface Ledger<K> extends Source<K> {
 		/**
 		 * Get the number of snapshots within the ledger.
 		 *
@@ -175,7 +165,7 @@ public interface Content {
 		 * Get a given snapshot from within this ledger. The snapshot handle must be
 		 * between <code>0</code> and <code>size()-1</code>.
 		 */
-		public Source get(int snapshot);
+		public Source<K> get(int snapshot);
 	}
 
 	/**
@@ -184,29 +174,22 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Sink {
+	public interface Sink<K> {
 		/**
 		 * Write a given piece of content into this sink.
 		 *
 		 * @param <T>
 		 * @param kind
-		 * @param p
+		 * @param key
 		 * @param value
 		 */
-		public void put(Trie p, Content value);
+		public void put(K key, Content value);
 
 		/**
 		 * Remove a given piece of content from this sink.
-		 * @param p
+		 * @param key
 		 */
-		public void remove(Trie p, Content.Type<?> type);
-
-		/**
-		 * Get the content registry associated with this sink.
-		 *
-		 * @return
-		 */
-		public Registry getContentRegistry();
+		public void remove(K key, Type<?> type);
 	}
 
 	/**
@@ -217,116 +200,12 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Root extends Source, Sink {
-		/**
-		 * Create a relative root. That is, a root which is relative to this
-		 * root.
-		 *
-		 * @param id
-		 * @return
-		 */
-		public Root subroot(Trie path);
-
+	public interface Root<K> extends Source<K>, Sink<K> {
 		/**
 		 * Synchronise this root against the underlying medium. This does two things. It
 		 * flushes writes and invalidates items which have changed on disk. Invalidate
 		 * items will then be reloaded on demand when next requested.
 		 */
 		public void synchronise() throws IOException;
-	}
-
-	/**
-	 * <p>
-	 * Responsible for associating content types to path entries. The simplest
-	 * way to do this is to base the decision purely on the suffix of the entry
-	 * in question. A standard implementation (wyc.util.SuffixRegistry) is
-	 * provided for this common case.
-	 * </p>
-	 *
-	 * <p>
-	 * In some situations, it does occur on occasion that suffix alone is not
-	 * enough. For example, a JVM class file may correspond to multiple content
-	 * types if it may come from different source languages. In such cases, a
-	 * probe of the content may be required to fully determine the content type.
-	 * </p>
-	 *
-	 * @author David J. Pearce
-	 *
-	 */
-	public interface Registry {
-		/**
-		 * Determine an appropriate suffix for a given content type.
-		 *
-		 * @param t
-		 * @return
-		 */
-		public String suffix(Type<?> t);
-
-		/**
-		 * Determine the content type appropriate for a given suffix (if any).
-		 *
-		 * @param suffix
-		 * @return <code>null</code> if none found.
-		 */
-		public Type<?> contentType(String suffix);
-	}
-
-	/**
-	 * Matches all possible content.
-	 */
-	public static final Filter<? extends Content> ANY = new Content.Filter<>() {
-		@Override
-		public boolean includes(Content.Type<?> ct, Trie p) {
-			return true;
-		}
-	};
-
-	public static <T extends Content> Filter<T> Filter(Content.Type<T> ct, Trie path) {
-		return new Content.Filter<>() {
-
-			@Override
-			public boolean includes(Type<?> c, Trie p) {
-				return ct == c && path.matches(p);
-			}
-
-		};
-	}
-
-	/**
-	 * Default implementation of a content registry. This associates a given set
-	 * of content types and suffixes. The intention is that plugins register new
-	 * content types and these will end up here.
-	 *
-	 * @author David J. Pearce
-	 *
-	 */
-	public static class DefaultRegistry implements Registry {
-		private HashMap<String, Content.Type> contentTypes = new HashMap<>();
-
-		public DefaultRegistry register(Content.Type<?> contentType, String suffix) {
-			contentTypes.put(suffix, contentType);
-			return this;
-		}
-
-		public DefaultRegistry unregister(Content.Type<?> contentType, String suffix) {
-			contentTypes.remove(suffix);
-			return this;
-		}
-
-		@Override
-		public String suffix(Content.Type<?> t) {
-			for (Map.Entry<String, Content.Type> p : contentTypes.entrySet()) {
-				if (p.getValue() == t) {
-					return p.getKey();
-				}
-			}
-			// Couldn't find it!
-			return null;
-		}
-
-		@Override
-		public Content.Type<?> contentType(String suffix) {
-			return contentTypes.get(suffix);
-		}
 	}
 }

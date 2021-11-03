@@ -20,12 +20,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import jbuildsled.core.Content;
+import jbuildsled.core.Content.Type;
 
 /**
  * A shim for handling ZipFiles in a uniform fashion within the Whiley File
@@ -34,49 +36,51 @@ import jbuildsled.core.Content;
  * @author David J. Pearce
  *
  */
-public class ZipFile implements Content, Content.Source {
+public class ZipFile<K> implements Content, Content.Source<K> {
 
-	public static Content.Type<ZipFile> ContentType = new Content.Type<>() {
-		@Override
-		public String getSuffix() {
-			return "zip";
-		}
-
-		@Override
-		public ZipFile read(Trie id, InputStream input, Content.Registry registry) throws IOException {
-			return new ZipFile(registry, input);
-		}
-
-		@Override
-		public void write(OutputStream output, ZipFile zf) throws IOException {
-			ZipOutputStream zout = new ZipOutputStream(output);
-			for (int i = 0; i != zf.size(); ++i) {
-				Entry<?> e = zf.get(i);
-				// Create filename
-				String filename = e.path.toString() + "." + e.contentType.getSuffix();
-				zout.putNextEntry(new ZipEntry(filename));
-				zout.write(e.bytes);
-				zout.closeEntry();
+	public static <K> Content.Type<ZipFile<K>> ContentType(Function<String, Pair<Type<?>, K>> decoder) {
+		return new Content.Type<>() {
+			@Override
+			public String getSuffix() {
+				return "zip";
 			}
-			zout.finish();
-		}
+
+			@Override
+			public ZipFile<K> read(InputStream input) throws IOException {
+				return new ZipFile<>(this, decoder, input);
+			}
+
+			@Override
+			public void write(OutputStream output, ZipFile<K> zf) throws IOException {
+				ZipOutputStream zout = new ZipOutputStream(output);
+				for (int i = 0; i != zf.size(); ++i) {
+					ZipFile.Entry<K,?> e = zf.get(i);
+					// Create filename
+					String filename = e.key.toString() + "." + e.contentType.getSuffix();
+					zout.putNextEntry(new ZipEntry(filename));
+					zout.write(e.bytes);
+					zout.closeEntry();
+				}
+				zout.finish();
+			}
+		};
 	};
 
 	/**
-	 * The content registry used by this ZipFile for interpreting content.
+	 * The actual content type used for this ZipFile.
 	 */
-	private final Content.Registry registry;
+	private final Content.Type<?> contentType;
 
 	/**
 	 * Contains the list of entries in the zip file.
 	 */
-	private final List<Entry<? extends Content>> entries;
+	private final List<Entry<K, ? extends Content>> entries;
 
 	/**
 	 * Construct an empty ZipFile
 	 */
-	public ZipFile(Content.Registry registry) {
-		this.registry = registry;
+	public ZipFile(Content.Type<?> contentType) {
+		this.contentType = contentType;
 		this.entries = new ArrayList<>();
 	}
 
@@ -85,22 +89,17 @@ public class ZipFile implements Content, Content.Source {
 	 *
 	 * @param input
 	 */
-	public ZipFile(Content.Registry registry, InputStream input) throws IOException {
-		this.registry = registry;
+	public ZipFile(Content.Type<?> contentType, Function<String, Pair<Type<?>, K>> decoder, InputStream input)
+			throws IOException {
+		this.contentType = contentType;
 		this.entries = new ArrayList<>();
 		// Read all entries from the input stream
 		ZipInputStream zin = new ZipInputStream(input);
 		ZipEntry e;
 		while ((e = zin.getNextEntry()) != null) {
 			byte[] contents = readEntryContents(zin);
-			// FIXME: making certain assumptions here about what's in the Zip file. For
-			// example, a filename with no suffix will cause a crash here.
-			String[] ns = e.getName().split("\\.");
-			if(ns.length > 1) {
-				Trie p = Trie.fromString(ns[0]);
-				Content.Type<?> ct = registry.contentType(ns[1]);
-				entries.add(new Entry<>(ct, p, contents));
-			}
+			Pair<Type<?>, K> p = decoder.apply(e.getName());
+			entries.add(new Entry<>(p.first(), p.second(), contents));
 			zin.closeEntry();
 		}
 		zin.close();
@@ -112,16 +111,11 @@ public class ZipFile implements Content, Content.Source {
 
 	@Override
 	public Content.Type<?> getContentType() {
-		return ContentType;
+		return contentType;
 	}
 
-	@Override
-	public Content.Registry getContentRegistry() {
-		return registry;
-	}
-
-	public <T extends Content> void add(Content.Type<T> ct, Trie path, byte[] bytes) {
-		this.entries.add(new Entry<>(ct,path,bytes));
+	public <T extends Content> void add(Content.Type<T> ct, K key, byte[] bytes) {
+		this.entries.add(new Entry<>(ct,key,bytes));
 	}
 
 	/**
@@ -130,15 +124,15 @@ public class ZipFile implements Content, Content.Source {
 	 * @param i
 	 * @return
 	 */
-	public Entry<?> get(int i) {
+	public Entry<K,?> get(int i) {
 		return entries.get(i);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Content> T get(Content.Type<T> kind, Trie p) {
+	public <T extends Content> T get(Content.Type<T> kind, K p) {
 		for (int i = 0; i != entries.size(); ++i) {
-			Entry<?> ith = entries.get(i);
+			Entry<K,?> ith = entries.get(i);
 			if (ith.getTrie().equals(p) && ith.getContentType() == kind) {
 				return (T) ith.get();
 			}
@@ -149,10 +143,10 @@ public class ZipFile implements Content, Content.Source {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Content> List<T> getAll(Content.Filter<T> filter) {
+	public <T extends Content> List<T> getAll(Content.Filter<K,T> filter) {
 		ArrayList<T> rs = new ArrayList<>();
 		for (int i = 0; i != entries.size(); ++i) {
-			Entry<?> ith = entries.get(i);
+			Entry<K,?> ith = entries.get(i);
 			if (filter.includes(ith.getContentType(),ith.getTrie())) {
 				rs.add((T) ith.get());
 			}
@@ -161,12 +155,12 @@ public class ZipFile implements Content, Content.Source {
 	}
 
 	@Override
-	public List<Trie> match(Content.Filter<? extends Content> filter) {
+	public List<K> match(Content.Filter<K,? extends Content> filter) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public <T extends Content> List<Trie> match(Content.Filter<T> ct, Predicate<T> p) {
+	public <T extends Content> List<K> match(Content.Filter<K,T> ct, Predicate<T> p) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -184,20 +178,20 @@ public class ZipFile implements Content, Content.Source {
 		return buffer.toByteArray();
 	}
 
-	public final class Entry<T extends Content> {
-		public final Trie path;
+	public final static class Entry<K,T extends Content> {
+		public final K key;
 		public final Content.Type<T> contentType;
 		public final byte[] bytes;
 		public T value;
 
-		public Entry(Content.Type<T> contentType, Trie path, byte[] bytes) {
+		public Entry(Content.Type<T> contentType, K key, byte[] bytes) {
 			this.contentType = contentType;
-			this.path = path;
+			this.key = key;
 			this.bytes = bytes;
 		}
 
-		public Trie getTrie() {
-			return path;
+		public K getTrie() {
+			return key;
 		}
 
 		public Content.Type<?> getContentType() {
@@ -206,8 +200,8 @@ public class ZipFile implements Content, Content.Source {
 
 		public T get() {
 			try {
-				if(value == null) {
-					value = contentType.read(path, getInputStream(), ZipFile.this.registry);
+				if (value == null) {
+					value = contentType.read(getInputStream());
 				}
 				return value;
 			} catch (IOException e) {
