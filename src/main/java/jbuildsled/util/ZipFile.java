@@ -36,9 +36,10 @@ import jbuildsled.core.Content.Type;
  * @author David J. Pearce
  *
  */
-public class ZipFile<K> implements Content, Content.Source<K> {
+public class ZipFile<K, V extends Content> implements Content, Content.Source<K, V> {
 
-	public static <K> Content.Type<ZipFile<K>> ContentType(Function<String, Pair<Type<?>, K>> decoder) {
+	public static <K, V extends Content> Content.Type<ZipFile<K, V>> ContentType(
+			Function<String, Pair<Type<V>, K>> decoder) {
 		return new Content.Type<>() {
 			@Override
 			public String getSuffix() {
@@ -46,12 +47,12 @@ public class ZipFile<K> implements Content, Content.Source<K> {
 			}
 
 			@Override
-			public ZipFile<K> read(InputStream input) throws IOException {
+			public ZipFile<K,V> read(InputStream input) throws IOException {
 				return new ZipFile<>(this, decoder, input);
 			}
 
 			@Override
-			public void write(OutputStream output, ZipFile<K> zf) throws IOException {
+			public void write(OutputStream output, ZipFile<K,V> zf) throws IOException {
 				ZipOutputStream zout = new ZipOutputStream(output);
 				for (int i = 0; i != zf.size(); ++i) {
 					ZipFile.Entry<K,?> e = zf.get(i);
@@ -74,7 +75,7 @@ public class ZipFile<K> implements Content, Content.Source<K> {
 	/**
 	 * Contains the list of entries in the zip file.
 	 */
-	private final List<Entry<K, ? extends Content>> entries;
+	private final List<Entry<K, V>> entries;
 
 	/**
 	 * Construct an empty ZipFile
@@ -89,7 +90,7 @@ public class ZipFile<K> implements Content, Content.Source<K> {
 	 *
 	 * @param input
 	 */
-	public ZipFile(Content.Type<?> contentType, Function<String, Pair<Type<?>, K>> decoder, InputStream input)
+	public ZipFile(Content.Type<?> contentType, Function<String, Pair<Type<V>, K>> decoder, InputStream input)
 			throws IOException {
 		this.contentType = contentType;
 		this.entries = new ArrayList<>();
@@ -98,7 +99,7 @@ public class ZipFile<K> implements Content, Content.Source<K> {
 		ZipEntry e;
 		while ((e = zin.getNextEntry()) != null) {
 			byte[] contents = readEntryContents(zin);
-			Pair<Type<?>, K> p = decoder.apply(e.getName());
+			Pair<Type<V>, K> p = decoder.apply(e.getName());
 			entries.add(new Entry<>(p.first(), p.second(), contents));
 			zin.closeEntry();
 		}
@@ -114,7 +115,7 @@ public class ZipFile<K> implements Content, Content.Source<K> {
 		return contentType;
 	}
 
-	public <T extends Content> void add(Content.Type<T> ct, K key, byte[] bytes) {
+	public void add(Content.Type<V> ct, K key, byte[] bytes) {
 		this.entries.add(new Entry<>(ct,key,bytes));
 	}
 
@@ -130,7 +131,7 @@ public class ZipFile<K> implements Content, Content.Source<K> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Content> T get(Content.Type<T> kind, K p) {
+	public <T extends V> T get(Content.Type<T> kind, K p) {
 		for (int i = 0; i != entries.size(); ++i) {
 			Entry<K,?> ith = entries.get(i);
 			if (ith.getTrie().equals(p) && ith.getContentType() == kind) {
@@ -143,7 +144,7 @@ public class ZipFile<K> implements Content, Content.Source<K> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Content> List<T> getAll(Content.Filter<K,T> filter) {
+	public <T extends V> List<T> getAll(Content.Filter<K,T> filter) {
 		ArrayList<T> rs = new ArrayList<>();
 		for (int i = 0; i != entries.size(); ++i) {
 			Entry<K,?> ith = entries.get(i);
@@ -155,12 +156,12 @@ public class ZipFile<K> implements Content, Content.Source<K> {
 	}
 
 	@Override
-	public List<K> match(Content.Filter<K,? extends Content> filter) {
+	public List<K> match(Content.Filter<K, ?> filter) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public <T extends Content> List<K> match(Content.Filter<K,T> ct, Predicate<T> p) {
+	public <S> List<K> match(Content.Filter<K,S> ct, Predicate<S> p) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -178,13 +179,13 @@ public class ZipFile<K> implements Content, Content.Source<K> {
 		return buffer.toByteArray();
 	}
 
-	public final static class Entry<K,T extends Content> {
+	public final static class Entry<K,V extends Content> {
 		public final K key;
-		public final Content.Type<T> contentType;
+		public final Content.Type<V> contentType;
 		public final byte[] bytes;
-		public T value;
+		public V value;
 
-		public Entry(Content.Type<T> contentType, K key, byte[] bytes) {
+		public Entry(Content.Type<V> contentType, K key, byte[] bytes) {
 			this.contentType = contentType;
 			this.key = key;
 			this.bytes = bytes;
@@ -198,7 +199,7 @@ public class ZipFile<K> implements Content, Content.Source<K> {
 			return contentType;
 		}
 
-		public T get() {
+		public V get() {
 			try {
 				if (value == null) {
 					value = contentType.read(getInputStream());

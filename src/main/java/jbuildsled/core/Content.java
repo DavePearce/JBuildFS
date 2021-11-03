@@ -16,9 +16,7 @@ package jbuildsled.core;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 
 
@@ -31,12 +29,13 @@ import java.util.function.Predicate;
  *
  */
 public interface Content {
+
 	/**
 	 * Get the content type associated with this piece of content.
 	 *
 	 * @return
 	 */
-	public Type<?> getContentType();
+	public Content.Type<?> getContentType();
 
 	/**
 	 * Provides a means for selecting one or more content types from a repository or
@@ -45,14 +44,14 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Filter<K,T extends Content> {
+	public interface Filter<K,T> {
 		/**
 		 * Check whether this filter includes a given content type
 		 *
 		 * @param ct Content Type to check for inclusion.
 		 * @return
 		 */
-		public boolean includes(Type<?> ct, K p);
+		public boolean includes(Type<?> ct, K key);
 	}
 
 	/**
@@ -64,7 +63,7 @@ public interface Content {
 	 *
 	 * @param <T>
 	 */
-	public interface Type<T extends Content> {
+	public interface Type<T> {
 		/**
 		 * Get the suffix associated with this content type
 		 *
@@ -102,7 +101,7 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Source<K> {
+	public interface Source<K,V extends Content> {
 		/**
 		 * Get a given piece of content from this source.
 		 *
@@ -111,7 +110,7 @@ public interface Content {
 		 * @param key
 		 * @return
 		 */
-		public <T extends Content> T get(Type<T> kind, K key) throws IOException;
+		public <T extends V> T get(Type<T> kind, K key) throws IOException;
 
 		/**
 		 * Get a given piece of content from this source.
@@ -121,7 +120,7 @@ public interface Content {
 		 * @param p
 		 * @return
 		 */
-		public <T extends Content> List<T> getAll(Content.Filter<K,T> filter) throws IOException;
+		public <T extends V> List<T> getAll(Content.Filter<K,T> filter) throws IOException;
 
 		/**
 		 * Find all content matching a given filter.
@@ -131,7 +130,7 @@ public interface Content {
 		 * @param f
 		 * @return
 		 */
-		public List<K> match(Content.Filter<K,? extends Content> filter);
+		public List<K> match(Content.Filter<K,?> filter);
 
 		/**
 		 * Find all content matching a given predicate.
@@ -141,7 +140,7 @@ public interface Content {
 		 * @param p
 		 * @return
 		 */
-		public <T extends Content> List<K> match(Content.Filter<K,T> ct, Predicate<T> p);
+		public <T> List<K> match(Content.Filter<K,T> ct, Predicate<T> p);
 	}
 
 	/**
@@ -153,7 +152,7 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Ledger<K> extends Source<K> {
+	public interface Ledger<K,V extends Content> extends Source<K,V> {
 		/**
 		 * Get the number of snapshots within the ledger.
 		 *
@@ -165,7 +164,7 @@ public interface Content {
 		 * Get a given snapshot from within this ledger. The snapshot handle must be
 		 * between <code>0</code> and <code>size()-1</code>.
 		 */
-		public Source<K> get(int snapshot);
+		public Source<K,V> get(int snapshot);
 	}
 
 	/**
@@ -174,7 +173,7 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Sink<K> {
+	public interface Sink<K,V extends Content> {
 		/**
 		 * Write a given piece of content into this sink.
 		 *
@@ -183,7 +182,7 @@ public interface Content {
 		 * @param key
 		 * @param value
 		 */
-		public void put(K key, Content value);
+		public void put(K key, V value);
 
 		/**
 		 * Remove a given piece of content from this sink.
@@ -200,7 +199,7 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Root<K> extends Source<K>, Sink<K> {
+	public interface Root<K, V extends Content> extends Source<K, V>, Sink<K, V> {
 		/**
 		 * Synchronise this root against the underlying medium. This does two things. It
 		 * flushes writes and invalidates items which have changed on disk. Invalidate
