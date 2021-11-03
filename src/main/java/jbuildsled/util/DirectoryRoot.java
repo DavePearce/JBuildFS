@@ -17,6 +17,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jbuildsled.core.Content;
@@ -30,42 +31,32 @@ import jbuildsled.core.Content.Type;
  * @author David J. Pearce
  *
  */
-public class DirectoryRoot implements Content.Root, Iterable<Content> {
+public class DirectoryRoot<K> implements Content.Root<K>, Iterable<Content> {
 	public final static FileFilter NULL_FILTER = new FileFilter() {
 		@Override
 		public boolean accept(File file) {
 			return true;
 		}
 	};
-    private final Content.Registry registry;
     private final File dir;
     private final FileFilter filter;
+    private final Function<String, Pair<Type<?>, K>> decoder;
     private final ArrayList<Entry<?>> items;
 
-    public DirectoryRoot(Content.Registry registry, File dir) throws IOException {
-        this(registry, dir, NULL_FILTER);
-    }
+	public DirectoryRoot(Function<String, Pair<Type<?>, K>> decoder, File dir) throws IOException {
+		this(decoder, dir, NULL_FILTER);
+	}
 
-    public DirectoryRoot(Content.Registry registry, File dir, FileFilter filter) throws IOException {
-		this.registry = registry;
+	public DirectoryRoot(Function<String, Pair<Type<?>, K>> decoder, File dir, FileFilter filter) throws IOException {
+		this.decoder = decoder;
 		this.dir = dir;
 		this.filter = filter;
-		this.items = initialise(registry, dir, filter);
-    }
-
-    /**
-	 * Get the content registry associated with this root.
-	 *
-	 * @return
-	 */
-    @Override
-    public Content.Registry getContentRegistry() {
-    	return registry;
-    }
+		this.items = initialise(dir, filter);
+	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <S extends Content> S get(Content.Type<S> kind, Trie p) {
+	public <S extends Content> S get(Content.Type<S> kind, K p) {
 		for (int i = 0; i != items.size(); ++i) {
 			Entry<?> ith = items.get(i);
 			Content.Type<?> ct = ith.getContentType();
@@ -78,7 +69,7 @@ public class DirectoryRoot implements Content.Root, Iterable<Content> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <S extends Content> List<S> getAll(Content.Filter<S> filter) {
+	public <S extends Content> List<S> getAll(Content.Filter<K,S> filter) {
 		ArrayList<S> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry<?> ith = items.get(i);
@@ -90,8 +81,8 @@ public class DirectoryRoot implements Content.Root, Iterable<Content> {
 	}
 
 	@Override
-	public List<Trie> match(Content.Filter<?> filter) {
-		ArrayList<Trie> rs = new ArrayList<>();
+	public List<K> match(Content.Filter<K,?> filter) {
+		ArrayList<K> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry<?> ith = items.get(i);
 			if (filter.includes(ith.getContentType(), ith.getPath())) {
@@ -103,8 +94,8 @@ public class DirectoryRoot implements Content.Root, Iterable<Content> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <S extends Content> List<Trie> match(Content.Filter<S> filter, Predicate<S> f) {
-		ArrayList<Trie> rs = new ArrayList<>();
+	public <S extends Content> List<K> match(Content.Filter<K,S> filter, Predicate<S> f) {
+		ArrayList<K> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry<?> ith = items.get(i);
 			Content.Type<?> ct = ith.getContentType();
@@ -119,11 +110,6 @@ public class DirectoryRoot implements Content.Root, Iterable<Content> {
 	}
 
 	@Override
-	public Content.Root subroot(Trie path) {
-		return new SubRoot(path);
-	}
-
-	@Override
 	public void synchronise() throws IOException {
 		// FIXME: this method could be made more efficient
 		final java.nio.file.Path root = dir.toPath();
@@ -133,14 +119,14 @@ public class DirectoryRoot implements Content.Root, Iterable<Content> {
 			// Construct filename
 			String filename = root.relativize(f.toPath()).toString().replace(File.separatorChar, '/');
 			// Decode filename into path and content type.
-			Pair<Trie,Content.Type<?>> p = decodeFilename(filename, registry);
-			// Check whether this file isrecognised or not
-			if(p != null) {
+			Pair<Type<?>, K> p = decoder.apply(filename);
+			// Check whether this file is recognised or not
+			if (p != null) {
 				// Search for this item
 				boolean matched = false;
 				for (int i = 0; i != items.size(); ++i) {
 					Entry<?> ith = items.get(i);
-					if (ith.getPath().equals(p.first()) && ith.getContentType() == p.second()) {
+					if (ith.getPath().equals(p.second()) && ith.getContentType() == p.first()) {
 						matched = true;
 						break;
 					}
@@ -179,31 +165,31 @@ public class DirectoryRoot implements Content.Root, Iterable<Content> {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public void put(Trie p, Content value) {
+	public void put(K key, Content value) {
 		// NOTE: yes, there is unsafe stuff going on here because we cannot easily type
 		// this in Java.
 		Content.Type ct = value.getContentType();
 		// Update state
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
-			if (ith.getContentType() == ct && ith.getPath().equals(p)) {
+			if (ith.getContentType() == ct && ith.getPath().equals(key)) {
 				// Yes, overwrite existing entry
 				ith.set(value);
 				return;
 			}
 		}
-		Entry<Content> e = new Entry<>(p, ct);
+		Entry<Content> e = new Entry<>(key, ct);
 		e.set(value);
 		// Create new entry
 		items.add(e);
 	}
 
 	@Override
-	public void remove(Trie p, Content.Type<?> ct) {
+	public void remove(K key, Content.Type<?> ct) {
 		// Update state
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
-			if (ith.getContentType() == ct && ith.getPath().equals(p)) {
+			if (ith.getContentType() == ct && ith.getPath().equals(key)) {
 				// Yes, remove entry
 				items.remove(i);
 				return;
@@ -247,7 +233,7 @@ public class DirectoryRoot implements Content.Root, Iterable<Content> {
 	 * @throws IOException
 	 */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-	private ArrayList<Entry<?>> initialise(Content.Registry registry, File dir, FileFilter filter) throws IOException {
+	private ArrayList<Entry<?>> initialise(File dir, FileFilter filter) throws IOException {
 		java.nio.file.Path root = dir.toPath();
 		// First extract all files rooted in this directory
 		List<File> files = findAll(64, dir, filter, new ArrayList<>());
@@ -258,12 +244,12 @@ public class DirectoryRoot implements Content.Root, Iterable<Content> {
 			File ith = files.get(i);
 			String filename = root.relativize(ith.toPath()).toString().replace(File.separatorChar, '/');
 			// Decode filename into path and content type.
-			Pair<Trie,Content.Type<?>> p = decodeFilename(filename, registry);
-			if(p != null) {
+			Pair<Type<?>, K> p = decoder.apply(filename);
+			if (p != null) {
 				// Decoding was successfull!
-				Content.Type ct = p.second();
+				Content.Type ct = p.first();
 				// Create lazy artifact
-				entries.add(new Entry(p.first(), ct));
+				entries.add(new Entry(p.second(), ct));
 			}
 		}
 		// Done
@@ -285,7 +271,7 @@ public class DirectoryRoot implements Content.Root, Iterable<Content> {
 		/**
 		 * The repository path to which this entry corresponds.
 		 */
-		private final Trie path;
+		private final K path;
 		/**
 		 * The content type of this entry
 		 */
@@ -300,13 +286,13 @@ public class DirectoryRoot implements Content.Root, Iterable<Content> {
 		 */
 		private S value;
 
-		public Entry(Trie path, Content.Type<S> contentType) {
+		public Entry(K path, Content.Type<S> contentType) {
 			this.path = path;
 			this.contentType = contentType;
 			this.dirty = false;
 		}
 
-		public Trie getPath() {
+		public K getPath() {
 			return path;
 		}
 
@@ -319,7 +305,7 @@ public class DirectoryRoot implements Content.Root, Iterable<Content> {
 				if (value == null) {
 					File f = getFile();
 					FileInputStream fin = new FileInputStream(f);
-					value = contentType.read(path, fin, DirectoryRoot.this.registry);
+					value = contentType.read(fin);
 					fin.close();
 				}
 			} catch (IOException e) {
@@ -360,108 +346,6 @@ public class DirectoryRoot implements Content.Root, Iterable<Content> {
 	        // Done.
 	        return new File(dir, filename);
 		}
-	}
-
-	/**
-	 * Used to extracting a root which is relative to another root.
-	 *
-	 * @author David J. Pearce
-	 *
-	 */
-	private class SubRoot implements Content.Root {
-		private final Trie path;
-
-		SubRoot(Trie path) {
-			this.path = path;
-		}
-
-		@Override
-		public Content.Registry getContentRegistry() {
-			return registry;
-		}
-
-		@Override
-		public <T extends Content> T get(Type<T> ct, Trie p) throws IOException {
-			return DirectoryRoot.this.get(ct, path.append(p));
-		}
-
-		@Override
-		public <T extends Content> List<T> getAll(Content.Filter<T> filter) throws IOException {
-			Content.Filter<T> f = new Content.Filter<>() {
-				@Override
-				public boolean includes(Type<?> ct, Trie p) {
-					return filter.includes(ct, path.append(p));
-				}
-			};
-			return DirectoryRoot.this.getAll(f);
-		}
-
-		@Override
-		public List<Trie> match(Content.Filter<?> filter) {
-			Content.Filter<?> f = new Content.Filter<>() {
-				@Override
-				public boolean includes(Type<?> ct, Trie p) {
-					return filter.includes(ct, path.append(p));
-				}
-			};
-			return DirectoryRoot.this.match(f);
-		}
-
-		@Override
-		public <T extends Content> List<Trie> match(Content.Filter<T> cf, Predicate<T> p) {
-			throw new UnsupportedOperationException("implement me");
-		}
-
-		@Override
-		public void put(Trie p, Content value) {
-			DirectoryRoot.this.put(path.append(p), value);
-		}
-
-		@Override
-		public void remove(Trie p, Content.Type<?> value) {
-			DirectoryRoot.this.remove(path.append(p), value);
-		}
-
-		@Override
-		public Root subroot(Trie p) {
-			return DirectoryRoot.this.subroot(path.append(p));
-		}
-
-		@Override
-		public void synchronise() throws IOException {
-			DirectoryRoot.this.synchronise();
-		}
-	}
-
-    /**
-	 * Decode a given filename into a path and an appropriate content type based on
-	 * the filename's suffix. If no content type is found, or the path is malformed
-	 * then <code>null</code> is returned.
-	 *
-	 * @param filename The filename to be decoded (e.g. <code>main.whiley</code>)
-	 * @param registry The registry which associates suffixes with
-	 *                 <code>Content.Type</code>s.
-	 * @return
-	 */
-	private static Pair<Trie, Content.Type<?>> decodeFilename(String filename, Content.Registry registry) {
-		// Determine file suffix
-		String suffix = "";
-		int pos = filename.lastIndexOf('.');
-		if (pos > 0) {
-			suffix = filename.substring(pos + 1);
-		}
-		// Extract the path string
-		String pathStr = filename.substring(0, filename.length() - (suffix.length() + 1));
-		// Convert into path (if applicable)
-		Trie path = Trie.fromString(pathStr);
-		// Extract appropriate content type (if applicable)
-		Content.Type<?> type = registry.contentType(suffix);
-		// Read entry (if applicable)
-		if (type != null) {
-			// Done
-			return new Pair<>(path, type);
-		}
-		return null;
 	}
 
     /**
