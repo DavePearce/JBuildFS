@@ -5,6 +5,7 @@
    1. [Sources](#sources)
    1. [Sinks](#sinks)
    1. [Roots](#roots)
+1. [Ledgers](#ledgers)
 
 ## Overview
 
@@ -125,4 +126,14 @@ a `Content.Source` and `Content.Sink`.  In other words, its an
 end-point for our structured content (such as a filesystem or
 database).
 
-_Talk about `DirectoryRoot` here_
+_Talk about `DirectoryRoot` and `ZipFile` here_
+
+## Ledgers
+
+A content _ledger_ is an instance of `Content.Ledger`.  Unlike a
+`Content.Source` a ledger provides a versioned history of our content.
+This means, for example, we can compare content between versions to
+see what has changed.  This is useful, for example, in the context of
+[incremental
+compilers](https://en.wikipedia.org/wiki/Incremental_compiler) where
+it provides a key piece of the underlying functionality.
