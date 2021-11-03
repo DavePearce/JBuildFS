@@ -101,6 +101,8 @@ arbitrary source:
 This reads an instance of `Point` from the location `test/point` in
 the given source.
 
+Sources can be _queried_.
+
 #### Sinks
 
 A content sink is an instance of `Content.Sink`, and provides an API
@@ -124,9 +126,13 @@ the use of immutable classes for implementing structure content.
 A content root is an instance of `Content.Root` which means it is both
 a `Content.Source` and `Content.Sink`.  In other words, its an
 end-point for our structured content (such as a filesystem or
-database).
+database).  Perhaps the simplest example of a root is `DirectoryRoot`
+which allows one to treat a file system directory as a store for
+structured content.
 
-_Talk about `DirectoryRoot` and `ZipFile` here_
+Another interesting example of a root is a `ZipFile` which is both an
+item of structure content, and a root for the structured content it
+contains.
 
 ## Ledgers
 
