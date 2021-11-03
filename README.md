@@ -131,7 +131,9 @@ _Talk about `DirectoryRoot` and `ZipFile` here_
 ## Ledgers
 
 A content _ledger_ is an instance of `Content.Ledger`.  Unlike a
-`Content.Source` a ledger provides a versioned history of our content.
+`Content.Source` a ledger provides a versioned history of our content
+(roughly similar to the idea of a [journaling
+filesystem](https://en.wikipedia.org/wiki/Journaling_file_system)).
 This means, for example, we can compare content between versions to
 see what has changed.  This is useful, for example, in the context of
 [incremental
