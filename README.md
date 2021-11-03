@@ -3,6 +3,7 @@
 1. [Overview](#overview)
 1. [Content](#content)
    1. [Sources](#sources)
+   1. [Queries](#queries)   
    1. [Sinks](#sinks)
    1. [Roots](#roots)
 1. [Ledgers](#ledgers)
@@ -100,6 +101,8 @@ Point read(Content.Source source) throws IOException {
 
 This reads an instance of `Point` from the location `test/point` in
 the given source.
+
+#### Queries
 
 Sources can be _queried_ arbitrarily using instances of
 `Content.Filter` as follows:
