@@ -31,20 +31,17 @@ an instance of `Content` (though this might fail in the `InputStream`
 is corrupted, etc).  The following illustrates a minimal example:
 
 ```Java
-import jbuildsled.core.Content;
+interface Shape extends Content {}
 
-class Point implements Content {
+class Point implements Shape {
   public static Content.Type<Point> ContentType = new Content.Type<Point>() {
 
     @Override
-    public String getSuffix() {
-      return "pt";
-    }
-
-    @Override
-    public Point read(Trie id, InputStream input, Registry registry) throws IOException {
+    public Point read(InputStream input) throws IOException {
       try (ObjectInputStream ois = new ObjectInputStream(input)) {
-        return new Point(ois.readInt(), ois.readInt());
+        int x = ois.readInt();
+        int y = ois.readInt();
+        return new Point(x, y);
       }
     }
 
@@ -79,10 +76,6 @@ deserialise our structured content (e.g. read it from disk into an
 instance of `Point`, or write an instance of `Point` back into its
 binary form).
 
-Note that, when reading in structure content, it is often useful to
-know its key-value and this is given by the `id` parameter.  In this
-particular case, we don't actually care that much about it.
-
 #### Sources
 
 A content source is an instance of `Content.Source`, and provides an
@@ -93,13 +86,12 @@ following illustrates a simple method for reading a `Point` out of an
 arbitrary source:
 
 ```Java
-Point read(Content.Source source) throws IOException {
-  Trie id = Trie.fromString("test");
-  return source.get(Point.ContentType, id);
+Point read(Content.Source<String,Shape> source) throws IOException {
+    return source.get(Point.ContentType, "test");
 }
 ```
 
-This reads an instance of `Point` from the location `test/point` in
+This reads an instance of `Point` from the key `test` in
 the given source.
 
 #### Queries
@@ -123,9 +115,8 @@ for writing structured content into the store.  The following
 illustrates writing a piece of structured content into the store:
 
 ```Java
-void write(Content.Sink sink, Point pt) throws IOException {
-  Trie id = Trie.fromString("test");
-  sink.put(id, pt);
+void write(Content.Sink<String,Shape> sink, Point pt) throws IOException {
+    sink.put("test", pt);
 }
 ```
 
