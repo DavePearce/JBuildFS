@@ -77,8 +77,8 @@ binary form).
 
 #### Sources
 
-A content source is an instance of `Content.Source`, and provides an
-API for reading structured content out of a store.  Content sources
+A content source is an instance of `Content.Source<K,V>`, and provides
+an API for reading structured content out of a store.  Content sources
 (and sinks) are hierarchically structured into a tree-like
 organisation (roughly similar to that of a file system).  The
 following illustrates a simple method for reading a `Point` out of an
@@ -109,8 +109,8 @@ given source.
 
 #### Sinks
 
-A content sink is an instance of `Content.Sink`, and provides an API
-for writing structured content into the store.  The following
+A content sink is an instance of `Content.Sink<K,V>`, and provides an
+API for writing structured content into the store.  The following
 illustrates writing a piece of structured content into the store:
 
 ```Java
@@ -126,9 +126,9 @@ the use of immutable classes for implementing structure content.
 
 #### Roots
 
-A content root is an instance of `Content.Root` which means it is both
-a `Content.Source` and `Content.Sink`.  In other words, its an
-end-point for our structured content (such as a filesystem or
+A content root is an instance of `Content.Root<K,V>` which means it is
+both a `Content.Source<K,V>` and `Content.Sink<K,V>`.  In other words,
+its an end-point for our structured content (such as a filesystem or
 database).  Perhaps the simplest example of a root is `DirectoryRoot`
 which allows one to treat a file system directory as a store for
 structured content.
