@@ -21,16 +21,16 @@
   <!-- Description -->
   <!-- ============================================== -->  
 
-  <name>Java Build Filesystem</name>
+  <name>Java Build Store</name>
   <description>
 A library for implementing key-value stores that supports specific
 features for building compilers.
   </description>
 
-  <url>https://github.com/DavePearce/JBuildSled</url>
+  <url>https://github.com/DavePearce/JBuildStore</url>
   
   <scm>
-    <url>https://github.com/DavePearce/JBuildSled</url>
+    <url>https://github.com/DavePearce/JBuildStore</url>
   </scm>
 
   <developers>
