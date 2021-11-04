@@ -10,7 +10,7 @@
 
 ## Overview
 
-`JBuildSled` is a library for implementing [key-value
+`JBuildStore` is a library for implementing [key-value
 stores](https://en.wikipedia.org/wiki/Key%E2%80%93value_database) that
 supports specific features for building compilers.  Content is stored
 in a binary form, and is read into corresponding in-memory structures
@@ -124,17 +124,17 @@ if `Point` were mutable, then any _changes to point after the write
 would not be visible in the store_.  Generally speaking, we encourage
 the use of immutable classes for implementing structure content.
 
-#### Roots
+#### Stores
 
-A content root is an instance of `Content.Root<K,V>` which means it is
-both a `Content.Source<K,V>` and `Content.Sink<K,V>`.  In other words,
-its an end-point for our structured content (such as a filesystem or
-database).  Perhaps the simplest example of a root is `DirectoryRoot`
-which allows one to treat a file system directory as a store for
-structured content.
+A content store is an instance of `Content.Store<K,V>` which means it
+is both a `Content.Source<K,V>` and `Content.Sink<K,V>`.  In other
+words, its an end-point for our structured content (such as a
+filesystem or database).  Perhaps the simplest example of a root is
+`DirectoryStore` which allows one to treat a file system directory as
+a store for structured content.
 
-Another interesting example of a root is a `ZipFile` which is both an
-item of structure content, and a root for the structured content it
+Another interesting example of a store is a `ZipFile` which is both an
+item of structure content, and a store for the structured content it
 contains.
 
 ## Ledgers

@@ -6,7 +6,7 @@
   
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.whiley</groupId>
-  <artifactId>jbuildsled</artifactId>
+  <artifactId>jbuildstore</artifactId>
   <version>0.1.0</version>
 
   <licenses>
