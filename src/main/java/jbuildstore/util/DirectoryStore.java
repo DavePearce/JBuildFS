@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package jbuildsled.util;
+package jbuildstore.util;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -19,17 +19,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 
-import jbuildsled.core.Content;
-import jbuildsled.core.Key;
+import jbuildstore.core.Content;
+import jbuildstore.core.Key;
 
 /**
- * Provides an implementation of <code>Content.Source</code>
- * <code>Content.Sink</code> for representing a file system directory.
+ * Provides an implementation of <code>Content.Store<K,V></code> which is backed
+ * by a file system directory.
  *
  * @author David J. Pearce
  *
  */
-public class DirectoryRoot<K, V extends Content> implements Content.Root<K, V>, Iterable<V> {
+public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>, Iterable<V> {
 	public final static FileFilter NULL_FILTER = new FileFilter() {
 		@Override
 		public boolean accept(File file) {
@@ -41,11 +41,11 @@ public class DirectoryRoot<K, V extends Content> implements Content.Root<K, V>, 
 	private final Key.EncoderDecoder<K, V, String> encdec;
 	private final ArrayList<Entry<V>> items;
 
-	public DirectoryRoot(Key.EncoderDecoder<K, V, String> encdec, File dir) throws IOException {
+	public DirectoryStore(Key.EncoderDecoder<K, V, String> encdec, File dir) throws IOException {
 		this(encdec, dir, NULL_FILTER);
 	}
 
-	public DirectoryRoot(Key.EncoderDecoder<K, V, String> encdec, File dir, FileFilter filter) throws IOException {
+	public DirectoryStore(Key.EncoderDecoder<K, V, String> encdec, File dir, FileFilter filter) throws IOException {
 		this.encdec = encdec;
 		this.dir = dir;
 		this.filter = filter;

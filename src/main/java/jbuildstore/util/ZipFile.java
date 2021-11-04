@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package jbuildsled.util;
+package jbuildstore.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,9 +26,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import jbuildsled.core.Content;
-import jbuildsled.core.Key;
-import jbuildsled.core.Content.Type;
+import jbuildstore.core.Content;
+import jbuildstore.core.Key;
+import jbuildstore.core.Content.Type;
 
 /**
  * A shim for handling ZipFiles in a uniform fashion within the Whiley File

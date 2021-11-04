@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package jbuildsled.core;
+package jbuildstore.core;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -185,14 +185,14 @@ public interface Content {
 	}
 
 	/**
-	 * A content root represents an interface to an underlying medium (e.g. the file
+	 * A content store represents an interface to an underlying medium (e.g. the file
 	 * system). As such it provides both read and write access, along with the
 	 * ability for synchronisation.
 	 *
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Root<K, V extends Content> extends Source<K, V>, Sink<K, V> {
+	public interface Store<K, V extends Content> extends Source<K, V>, Sink<K, V> {
 		/**
 		 * Synchronise this root against the underlying medium. This does two things. It
 		 * flushes writes and invalidates items which have changed on disk. Invalidate
