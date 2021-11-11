@@ -60,6 +60,11 @@ public class ZipFile<K, V extends Content> implements Content, Content.Source<K,
 				}
 				zout.finish();
 			}
+
+			@Override
+			public String suffix() {
+				return "zip";
+			}
 		};
 	};
 

@@ -46,6 +46,15 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 	}
 
 	public DirectoryStore(Key.EncoderDecoder<K, V, String> encdec, File dir, FileFilter filter) throws IOException {
+		if(encdec == null) {
+			throw new IllegalArgumentException("Content encoder/decoder is required");
+		}
+		if(dir == null) {
+			throw new IllegalArgumentException("Directory root is required");
+		}
+		if(filter == null) {
+			throw new IllegalArgumentException("File filter is required");
+		}
 		this.encdec = encdec;
 		this.dir = dir;
 		this.filter = filter;
@@ -166,6 +175,9 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void put(K key, V value) {
+		if(key == null) {
+			throw new IllegalArgumentException("key required");
+		}
 		// NOTE: yes, there is unsafe stuff going on here because we cannot easily type
 		// this in Java.
 		Content.Type ct = value.getContentType();
@@ -247,7 +259,7 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 			// Decode filename into path and content type.
 			K key = encdec.decodeKey(filename);
 			Content.Type<V> ct = encdec.decodeType(filename);
-			if (key != null) {
+			if (ct != null && key != null) {
 				// Create lazy artifact
 				entries.add(new Entry<>(key, ct));
 			}

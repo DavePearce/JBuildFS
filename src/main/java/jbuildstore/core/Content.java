@@ -86,6 +86,14 @@ public interface Content {
 		 *            --- value to be converted into bytes.
 		 */
 		public void write(OutputStream output, T value) throws IOException;
+
+		/**
+		 * Return an appropriate suffix for this content type. This is used to identify
+		 * instances stored on disk (for example).
+		 *
+		 * @return
+		 */
+		public String suffix();
 	}
 
 	/**
