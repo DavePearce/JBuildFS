@@ -29,7 +29,7 @@ import jbuildstore.core.Key;
  * @author David J. Pearce
  *
  */
-public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>, Iterable<V> {
+public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>, Iterable<Content.Entry<K, V>> {
 	public final static FileFilter NULL_FILTER = new FileFilter() {
 		@Override
 		public boolean accept(File file) {
@@ -39,7 +39,7 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 	private final File dir;
 	private final FileFilter filter;
 	private final Key.EncoderDecoder<K, V, String> encdec;
-	private final ArrayList<Entry<V>> items;
+	private final ArrayList<Entry> items;
 
 	public DirectoryStore(Key.EncoderDecoder<K, V, String> encdec, File dir) throws IOException {
 		this(encdec, dir, NULL_FILTER);
@@ -65,9 +65,9 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 	@Override
 	public <T extends V> T get(Content.Type<T> kind, K key) {
 		for (int i = 0; i != items.size(); ++i) {
-			Entry<V> ith = items.get(i);
+			Entry ith = items.get(i);
 			Content.Type<?> ct = ith.getContentType();
-			if (ith.getPath().equals(key) && ct == kind) {
+			if (ith.getKey().equals(key) && ct == kind) {
 				return (T) ith.get();
 			}
 		}
@@ -79,8 +79,8 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 	public <T extends V> List<T> getAll(Content.Filter<K, T> filter) {
 		ArrayList<T> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
-			Entry<V> ith = items.get(i);
-			if (filter.includes(ith.getContentType(), ith.getPath())) {
+			Entry ith = items.get(i);
+			if (filter.includes(ith.getContentType(), ith.getKey())) {
 				rs.add((T) ith.get());
 			}
 		}
@@ -91,9 +91,9 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 	public List<K> match(Content.Filter<K, ?> filter) {
 		ArrayList<K> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
-			Entry<?> ith = items.get(i);
-			if (filter.includes(ith.getContentType(), ith.getPath())) {
-				rs.add(ith.getPath());
+			Entry ith = items.get(i);
+			if (filter.includes(ith.getContentType(), ith.getKey())) {
+				rs.add(ith.getKey());
 			}
 		}
 		return rs;
@@ -104,12 +104,12 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 	public <S> List<K> match(Content.Filter<K, S> filter, Predicate<S> f) {
 		ArrayList<K> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
-			Entry<?> ith = items.get(i);
+			Entry ith = items.get(i);
 			Content.Type<?> ct = ith.getContentType();
-			if (filter.includes(ct, ith.getPath())) {
+			if (filter.includes(ct, ith.getKey())) {
 				S item = (S) ith.get();
 				if (f.test(item)) {
-					rs.add(ith.getPath());
+					rs.add(ith.getKey());
 				}
 			}
 		}
@@ -133,8 +133,8 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 				// Search for this item
 				boolean matched = false;
 				for (int i = 0; i != items.size(); ++i) {
-					Entry<?> ith = items.get(i);
-					if (ith.getPath().equals(key) && ith.getContentType() == ct) {
+					Entry ith = items.get(i);
+					if (ith.getKey().equals(key) && ith.getContentType() == ct) {
 						matched = true;
 						break;
 					}
@@ -153,23 +153,11 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 		}
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public Iterator<V> iterator() {
+	public Iterator<Content.Entry<K, V>> iterator() {
 		// Add wrapping iterator which forces loading of artifacts.
-		return new Iterator<>() {
-			int index = 0;
-
-			@Override
-			public boolean hasNext() {
-				return index < items.size();
-			}
-
-			@Override
-			public V next() {
-				return items.get(index++).get();
-			}
-
-		};
+		return (Iterator) items.iterator();
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -184,13 +172,13 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 		// Update state
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
-			if (ith.getContentType() == ct && ith.getPath().equals(key)) {
+			if (ith.getContentType() == ct && ith.getKey().equals(key)) {
 				// Yes, overwrite existing entry
 				ith.set(value);
 				return;
 			}
 		}
-		Entry<V> e = new Entry<>(key, ct);
+		Entry e = new Entry(key, ct);
 		e.set(value);
 		// Create new entry
 		items.add(e);
@@ -201,7 +189,7 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 		// Update state
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
-			if (ith.getContentType() == ct && ith.getPath().equals(key)) {
+			if (ith.getContentType() == ct && ith.getKey().equals(key)) {
 				// Yes, remove entry
 				items.remove(i);
 				return;
@@ -223,11 +211,11 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 	public String toString() {
 		String r = "{";
 		boolean firstTime = true;
-		for (Entry<?> f : items) {
+		for (Entry f : items) {
 			if (!firstTime) {
 				r += ",";
 			}
-			r += f.getPath();
+			r += f.getKey();
 			firstTime = false;
 		}
 		return r + "}";
@@ -245,12 +233,12 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 	 * @throws IOException
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private ArrayList<Entry<V>> initialise(File dir, FileFilter filter) throws IOException {
+	private ArrayList<Entry> initialise(File dir, FileFilter filter) throws IOException {
 		java.nio.file.Path root = dir.toPath();
 		// First extract all files rooted in this directory
 		List<File> files = findAll(64, dir, filter, new ArrayList<>());
 		// Second convert them all into entries as appropriate
-		ArrayList<Entry<V>> entries = new ArrayList<>();
+		ArrayList<Entry> entries = new ArrayList<>();
 		//
 		for (int i = 0; i != files.size(); ++i) {
 			File ith = files.get(i);
@@ -261,7 +249,7 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 			Content.Type<V> ct = encdec.decodeType(filename);
 			if (ct != null && key != null) {
 				// Create lazy artifact
-				entries.add(new Entry<>(key, ct));
+				entries.add(new Entry(key, ct));
 			}
 		}
 		// Done
@@ -279,7 +267,7 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 	 *
 	 * @param <S>
 	 */
-	private class Entry<S extends V> {
+	private class Entry implements Content.Entry<K,V> {
 		/**
 		 * The repository path to which this entry corresponds.
 		 */
@@ -287,7 +275,7 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 		/**
 		 * The content type of this entry
 		 */
-		private final Content.Type<S> contentType;
+		private final Content.Type<? extends V> contentType;
 		/**
 		 * Indicates whether this entry has been modified or not.
 		 */
@@ -296,23 +284,25 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 		 * The cached value of this entry. This may be <code>null</code> if the entry
 		 * has been read from disk yet.
 		 */
-		private S value;
+		private V value;
 
-		public Entry(K key, Content.Type<S> contentType) {
+		public Entry(K key, Content.Type<? extends V> contentType) {
 			this.key = key;
 			this.contentType = contentType;
 			this.dirty = false;
 		}
 
-		public K getPath() {
+		@Override
+		public K getKey() {
 			return key;
 		}
 
-		public Content.Type<S> getContentType() {
+		@Override
+		public Content.Type<? extends V> getContentType() {
 			return contentType;
 		}
 
-		public S get() {
+		public V get() {
 			try {
 				if (value == null) {
 					File f = getFile();
@@ -326,13 +316,33 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 			return value;
 		}
 
-		public void set(S value) {
+		@Override
+		public <S extends V> S get(Class<S> kind) {
+			try {
+				if (value == null) {
+					File f = getFile();
+					FileInputStream fin = new FileInputStream(f);
+					value = contentType.read(fin);
+					fin.close();
+				}
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			if (kind.isInstance(value)) {
+				return (S) value;
+			} else {
+				throw new IllegalArgumentException("invalid content kind");
+			}
+		}
+
+		public void set(V value) {
 			if (this.value != value) {
 				this.dirty = true;
 				this.value = value;
 			}
 		}
 
+		@SuppressWarnings("unchecked")
 		public void flush() throws IOException {
 			// Only flush if the entry is actually dirty
 			if (dirty) {
@@ -348,15 +358,22 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 				}
 				// File now exists, therefore we can write to it.
 				FileOutputStream fout = new FileOutputStream(f);
-				contentType.write(fout, value);
+				@SuppressWarnings("rawtypes")
+				Content.Type ct = contentType;
+				ct.write(fout, value);
 				fout.close();
 			}
 		}
 
 		private File getFile() {
-			String filename = encdec.encode(contentType, key);
+			String filename = encdec.encode((Content.Type) contentType, key);
 			// Done.
 			return new File(dir, filename);
+		}
+
+		@Override
+		public String toString() {
+			return key + ":" + contentType.suffix();
 		}
 	}
 

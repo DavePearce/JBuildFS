@@ -55,6 +55,39 @@ public interface Content {
 	}
 
 	/**
+	 * Identifies a given piece of content in a store of some kind, and provides an
+	 * API for reading / writing it.
+	 *
+	 * @author David J. Pearce
+	 *
+	 * @param <K>
+	 */
+	public interface Entry<K,T> {
+		/**
+		 * Get the identifing key for this particular piece of content.
+		 *
+		 * @return
+		 */
+		public K getKey();
+
+		/**
+		 * Get the type of this particular piece of content.
+		 *
+		 * @return
+		 */
+		public Content.Type<? extends T> getContentType();
+
+		/**
+		 * Read this particular piece of content.
+		 *
+		 * @param <T>
+		 * @param kind
+		 * @return
+		 */
+		public <S extends T> S get(Class<S> kind);
+	}
+
+	/**
 	 * Provides an abstract mechanism for reading and writing file in
 	 * a given format. Whiley source files (*.whiley) are one example, whilst JVM
 	 * class files (*.class) are another.
