@@ -17,6 +17,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jbuildstore.core.Content;
@@ -29,7 +30,7 @@ import jbuildstore.core.Key;
  * @author David J. Pearce
  *
  */
-public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>, Iterable<Content.Entry<K, V>> {
+public class DirectoryStore<K extends Content.Key<V>, V extends Content> implements Content.Store<K, V>, Iterable<Content.Entry<K, V>> {
 	public final static FileFilter NULL_FILTER = new FileFilter() {
 		@Override
 		public boolean accept(File file) {
@@ -38,14 +39,14 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 	};
 	private final File dir;
 	private final FileFilter filter;
-	private final Key.EncoderDecoder<K, V, String> encdec;
+	private final Key.EncoderDecoder<K, String> encdec;
 	private final ArrayList<Entry> items;
 
-	public DirectoryStore(Key.EncoderDecoder<K, V, String> encdec, File dir) throws IOException {
+	public DirectoryStore(Key.EncoderDecoder<K, String> encdec, File dir) throws IOException {
 		this(encdec, dir, NULL_FILTER);
 	}
 
-	public DirectoryStore(Key.EncoderDecoder<K, V, String> encdec, File dir, FileFilter filter) throws IOException {
+	public DirectoryStore(Key.EncoderDecoder<K, String> encdec, File dir, FileFilter filter) throws IOException {
 		if(encdec == null) {
 			throw new IllegalArgumentException("Content encoder/decoder is required");
 		}
@@ -63,11 +64,10 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends V> T get(Content.Type<T> kind, K key) {
+	public <T extends V, S extends Content.Key<T>> T get(S key) {
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
-			Content.Type<?> ct = ith.getContentType();
-			if (ith.getKey().equals(key) && ct == kind) {
+			if (ith.getKey().equals(key)) {
 				return (T) ith.get();
 			}
 		}
@@ -76,24 +76,13 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends V> List<T> getAll(Content.Filter<K, T> filter) {
+	public <T extends V, S extends Content.Key<T>> List<T> getAll(Function<K,S> query) {
 		ArrayList<T> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
-			if (filter.includes(ith.getContentType(), ith.getKey())) {
+			S k = query.apply(ith.getKey());
+			if (k != null) {
 				rs.add((T) ith.get());
-			}
-		}
-		return rs;
-	}
-
-	@Override
-	public List<K> match(Content.Filter<K, ?> filter) {
-		ArrayList<K> rs = new ArrayList<>();
-		for (int i = 0; i != items.size(); ++i) {
-			Entry ith = items.get(i);
-			if (filter.includes(ith.getContentType(), ith.getKey())) {
-				rs.add(ith.getKey());
 			}
 		}
 		return rs;
@@ -101,16 +90,14 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <S> List<K> match(Content.Filter<K, S> filter, Predicate<S> f) {
-		ArrayList<K> rs = new ArrayList<>();
+	public <T extends V, S extends Content.Key<T>> List<S> match(Function<K, S> query) {
+		ArrayList<S> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
-			Content.Type<?> ct = ith.getContentType();
-			if (filter.includes(ct, ith.getKey())) {
-				S item = (S) ith.get();
-				if (f.test(item)) {
-					rs.add(ith.getKey());
-				}
+			S k = query.apply(ith.getKey());
+			if (k != null) {
+				// Following must be safe!
+				rs.add((S) ith.getKey());
 			}
 		}
 		return rs;
@@ -126,15 +113,14 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 			// Construct filename
 			String filename = root.relativize(f.toPath()).toString().replace(File.separatorChar, '/');
 			// Decode filename into path and content type.
-			K key = encdec.decodeKey(filename);
-			Content.Type<V> ct = encdec.decodeType(filename);
+			K key = encdec.decode(filename);
 			// Check whether this file is recognised or not
-			if (ct != null) {
+			if (key != null) {
 				// Search for this item
 				boolean matched = false;
 				for (int i = 0; i != items.size(); ++i) {
 					Entry ith = items.get(i);
-					if (ith.getKey().equals(key) && ith.getContentType() == ct) {
+					if (ith.getKey().equals(key)) {
 						matched = true;
 						break;
 					}
@@ -172,24 +158,24 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 		// Update state
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
-			if (ith.getContentType() == ct && ith.getKey().equals(key)) {
+			if (ith.getKey().equals(key)) {
 				// Yes, overwrite existing entry
 				ith.set(value);
 				return;
 			}
 		}
-		Entry e = new Entry(key, ct);
+		Entry e = new Entry(key);
 		e.set(value);
 		// Create new entry
 		items.add(e);
 	}
 
 	@Override
-	public void remove(K key, Content.Type<?> ct) {
+	public void remove(K key) {
 		// Update state
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
-			if (ith.getContentType() == ct && ith.getKey().equals(key)) {
+			if (ith.getKey().equals(key)) {
 				// Yes, remove entry
 				items.remove(i);
 				return;
@@ -245,11 +231,10 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 			String filename = root.relativize(ith.toPath()).toString().replace(File.separatorChar, '/');
 			// Decode filename into path and content type.
 			// Decode filename into path and content type.
-			K key = encdec.decodeKey(filename);
-			Content.Type<V> ct = encdec.decodeType(filename);
-			if (ct != null && key != null) {
+			K key = encdec.decode(filename);
+			if (key != null) {
 				// Create lazy artifact
-				entries.add(new Entry(key, ct));
+				entries.add(new Entry(key));
 			}
 		}
 		// Done
@@ -273,10 +258,6 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 		 */
 		private final K key;
 		/**
-		 * The content type of this entry
-		 */
-		private final Content.Type<? extends V> contentType;
-		/**
 		 * Indicates whether this entry has been modified or not.
 		 */
 		private boolean dirty;
@@ -286,9 +267,8 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 		 */
 		private V value;
 
-		public Entry(K key, Content.Type<? extends V> contentType) {
+		public Entry(K key) {
 			this.key = key;
-			this.contentType = contentType;
 			this.dirty = false;
 		}
 
@@ -298,41 +278,18 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 		}
 
 		@Override
-		public Content.Type<? extends V> getContentType() {
-			return contentType;
-		}
-
 		public V get() {
 			try {
 				if (value == null) {
 					File f = getFile();
 					FileInputStream fin = new FileInputStream(f);
-					value = contentType.read(fin);
+					value = key.getContentType().read(fin);
 					fin.close();
 				}
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 			return value;
-		}
-
-		@Override
-		public <S extends V> S get(Class<S> kind) {
-			try {
-				if (value == null) {
-					File f = getFile();
-					FileInputStream fin = new FileInputStream(f);
-					value = contentType.read(fin);
-					fin.close();
-				}
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-			if (kind.isInstance(value)) {
-				return (S) value;
-			} else {
-				throw new IllegalArgumentException("invalid content kind");
-			}
 		}
 
 		public void set(V value) {
@@ -358,22 +315,20 @@ public class DirectoryStore<K, V extends Content> implements Content.Store<K, V>
 				}
 				// File now exists, therefore we can write to it.
 				FileOutputStream fout = new FileOutputStream(f);
-				@SuppressWarnings("rawtypes")
-				Content.Type ct = contentType;
-				ct.write(fout, value);
+				key.getContentType().write(fout, value);
 				fout.close();
 			}
 		}
 
 		private File getFile() {
-			String filename = encdec.encode((Content.Type) contentType, key);
+			String filename = encdec.encode(key);
 			// Done.
 			return new File(dir, filename);
 		}
 
 		@Override
 		public String toString() {
-			return key + ":" + contentType.suffix();
+			return key.toString();
 		}
 	}
 

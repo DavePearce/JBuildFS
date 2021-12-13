@@ -21,14 +21,11 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import jbuildstore.core.Content;
-import jbuildstore.core.Key;
-import jbuildstore.core.Content.Type;
 
 /**
  * A shim for handling ZipFiles in a uniform fashion within the Whiley File
@@ -37,10 +34,10 @@ import jbuildstore.core.Content.Type;
  * @author David J. Pearce
  *
  */
-public class ZipFile<K, V extends Content> implements Content, Content.Source<K, V> {
+public class ZipFile<K extends Content.Key<V>, V extends Content> implements Content, Content.Source<K, V> {
 
-	public static <K, V extends Content> Content.Type<ZipFile<K, V>> ContentType(
-			Key.EncoderDecoder<K, V, String> encdec) {
+	public static <K extends Content.Key<V>, V extends Content> Content.Type<ZipFile<K, V>> ContentType(
+			jbuildstore.core.Key.EncoderDecoder<K, String> encdec) {
 		return new Content.Type<>() {
 			@Override
 			public ZipFile<K,V> read(InputStream input) throws IOException {
@@ -53,7 +50,7 @@ public class ZipFile<K, V extends Content> implements Content, Content.Source<K,
 				for (int i = 0; i != zf.size(); ++i) {
 					ZipFile.Entry<K,V> e = zf.get(i);
 					// Create filename
-					String filename = encdec.encode(e.contentType, e.key);
+					String filename = encdec.encode(e.key);
 					zout.putNextEntry(new ZipEntry(filename));
 					zout.write(e.bytes);
 					zout.closeEntry();
@@ -91,8 +88,8 @@ public class ZipFile<K, V extends Content> implements Content, Content.Source<K,
 	 *
 	 * @param input
 	 */
-	public ZipFile(Content.Type<?> contentType, Key.EncoderDecoder<K, V, String> encdec, InputStream input)
-			throws IOException {
+	public ZipFile(Content.Type<?> contentType, jbuildstore.core.Key.EncoderDecoder<K, String> encdec,
+			InputStream input) throws IOException {
 		this.contentType = contentType;
 		this.entries = new ArrayList<>();
 		// Read all entries from the input stream
@@ -101,9 +98,8 @@ public class ZipFile<K, V extends Content> implements Content, Content.Source<K,
 		while ((e = zin.getNextEntry()) != null) {
 			byte[] contents = readEntryContents(zin);
 			// Decode filename into path and content type.
-			K key = encdec.decodeKey(e.getName());
-			Content.Type<V> ct = encdec.decodeType(e.getName());
-			entries.add(new Entry<>(ct, key, contents));
+			K key = encdec.decode(e.getName());
+			entries.add(new Entry<>(key, contents));
 			zin.closeEntry();
 		}
 		zin.close();
@@ -118,8 +114,8 @@ public class ZipFile<K, V extends Content> implements Content, Content.Source<K,
 		return contentType;
 	}
 
-	public void add(Content.Type<V> ct, K key, byte[] bytes) {
-		this.entries.add(new Entry<>(ct,key,bytes));
+	public void add(K key, byte[] bytes) {
+		this.entries.add(new Entry<>(key, bytes));
 	}
 
 	/**
@@ -134,10 +130,10 @@ public class ZipFile<K, V extends Content> implements Content, Content.Source<K,
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends V> T get(Content.Type<T> kind, K p) {
+	public <T extends V, S extends Key<T>> T get(S p) {
 		for (int i = 0; i != entries.size(); ++i) {
 			Entry<K,?> ith = entries.get(i);
-			if (ith.getTrie().equals(p) && ith.getContentType() == kind) {
+			if (ith.key.equals(p)) {
 				return (T) ith.get();
 			}
 		}
@@ -147,11 +143,12 @@ public class ZipFile<K, V extends Content> implements Content, Content.Source<K,
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends V> List<T> getAll(Content.Filter<K,T> filter) {
+	public <T extends V, S extends Key<T>> List<T> getAll(Function<K, S> query) {
 		ArrayList<T> rs = new ArrayList<>();
 		for (int i = 0; i != entries.size(); ++i) {
-			Entry<K,?> ith = entries.get(i);
-			if (filter.includes(ith.getContentType(),ith.getTrie())) {
+			Entry<K, ?> ith = entries.get(i);
+			S k = query.apply(ith.key);
+			if (k != null) {
 				rs.add((T) ith.get());
 			}
 		}
@@ -159,12 +156,7 @@ public class ZipFile<K, V extends Content> implements Content, Content.Source<K,
 	}
 
 	@Override
-	public List<K> match(Content.Filter<K, ?> filter) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public <S> List<K> match(Content.Filter<K,S> ct, Predicate<S> p) {
+	public <T extends V, S extends Key<T>> List<S> match(Function<K, S> query) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -182,30 +174,20 @@ public class ZipFile<K, V extends Content> implements Content, Content.Source<K,
 		return buffer.toByteArray();
 	}
 
-	public final static class Entry<K,V extends Content> {
+	private final static class Entry<K extends Content.Key<V>, V extends Content> {
 		public final K key;
-		public final Content.Type<V> contentType;
 		public final byte[] bytes;
 		public V value;
 
-		public Entry(Content.Type<V> contentType, K key, byte[] bytes) {
-			this.contentType = contentType;
+		public Entry(K key, byte[] bytes) {
 			this.key = key;
 			this.bytes = bytes;
-		}
-
-		public K getTrie() {
-			return key;
-		}
-
-		public Content.Type<?> getContentType() {
-			return contentType;
 		}
 
 		public V get() {
 			try {
 				if (value == null) {
-					value = contentType.read(getInputStream());
+					value = key.getContentType().read(getInputStream());
 				}
 				return value;
 			} catch (IOException e) {

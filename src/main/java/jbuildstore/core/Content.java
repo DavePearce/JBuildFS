@@ -17,8 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.function.Predicate;
-
+import java.util.function.Function;
 
 /**
  * Provides various interfaces for mapping the structured content held in memory
@@ -55,6 +54,22 @@ public interface Content {
 	}
 
 	/**
+	 * Minimal requires for a content key.
+	 *
+	 * @author David J. Pearce
+	 *
+	 * @param <T>
+	 */
+	public interface Key<T> {
+		/**
+		 * Get the content type identified by this key.
+		 *
+		 * @return
+		 */
+		public Content.Type<T> getContentType();
+	}
+
+	/**
 	 * Identifies a given piece of content in a store of some kind, and provides an
 	 * API for reading / writing it.
 	 *
@@ -62,7 +77,7 @@ public interface Content {
 	 *
 	 * @param <K>
 	 */
-	public interface Entry<K,T> {
+	public interface Entry<K, T> {
 		/**
 		 * Get the identifing key for this particular piece of content.
 		 *
@@ -71,20 +86,13 @@ public interface Content {
 		public K getKey();
 
 		/**
-		 * Get the type of this particular piece of content.
-		 *
-		 * @return
-		 */
-		public Content.Type<? extends T> getContentType();
-
-		/**
 		 * Read this particular piece of content.
 		 *
 		 * @param <T>
 		 * @param kind
 		 * @return
 		 */
-		public <S extends T> S get(Class<S> kind);
+		public T get();
 	}
 
 	/**
@@ -135,7 +143,7 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Source<K,V extends Content> {
+	public interface Source<K, V extends Content> {
 		/**
 		 * Get a given piece of content from this source.
 		 *
@@ -144,7 +152,7 @@ public interface Content {
 		 * @param key
 		 * @return
 		 */
-		public <T extends V> T get(Type<T> kind, K key) throws IOException;
+		public <T extends V, S extends Key<T>> T get(S key) throws IOException;
 
 		/**
 		 * Get a given piece of content from this source.
@@ -154,7 +162,7 @@ public interface Content {
 		 * @param p
 		 * @return
 		 */
-		public <T extends V> List<T> getAll(Content.Filter<K,T> filter) throws IOException;
+		public <T extends V, S extends Key<T>> List<T> getAll(Function<K, S> query) throws IOException;
 
 		/**
 		 * Find all content matching a given filter.
@@ -164,17 +172,7 @@ public interface Content {
 		 * @param f
 		 * @return
 		 */
-		public List<K> match(Content.Filter<K,?> filter);
-
-		/**
-		 * Find all content matching a given predicate.
-		 *
-		 * @param <S>
-		 * @param kind
-		 * @param p
-		 * @return
-		 */
-		public <T> List<K> match(Content.Filter<K,T> ct, Predicate<T> p);
+		public <T extends V, S extends Key<T>> List<S> match(Function<K, S> query);
 	}
 
 	/**
@@ -222,7 +220,7 @@ public interface Content {
 		 * Remove a given piece of content from this sink.
 		 * @param key
 		 */
-		public void remove(K key, Type<?> type);
+		public void remove(K key);
 	}
 
 	/**
