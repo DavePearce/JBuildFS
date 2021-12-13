@@ -23,7 +23,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jbuildstore.core.Content;
-import jbuildstore.core.Content.Filter;
 import jbuildstore.core.Content.Type;
 
 public class HashMapStore<K,V extends Content> implements Content.Store<K,V>, Iterable<Content.Entry<K, V>>{

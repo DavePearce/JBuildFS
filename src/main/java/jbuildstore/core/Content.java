@@ -37,24 +37,7 @@ public interface Content {
 	public Content.Type<?> getContentType();
 
 	/**
-	 * Provides a means for selecting one or more content types from a repository or
-	 * root.
-	 *
-	 * @author David J. Pearce
-	 *
-	 */
-	public interface Filter<K,T> {
-		/**
-		 * Check whether this filter includes a given content type
-		 *
-		 * @param ct Content Type to check for inclusion.
-		 * @return
-		 */
-		public boolean includes(Type<?> ct, K key);
-	}
-
-	/**
-	 * Minimal requires for a content key.
+	 * Minimal requirements for a content key.
 	 *
 	 * @author David J. Pearce
 	 *
