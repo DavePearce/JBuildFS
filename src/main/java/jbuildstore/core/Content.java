@@ -34,7 +34,7 @@ public interface Content {
 	 *
 	 * @return
 	 */
-	public Content.Type<?> getContentType();
+	public Content.Type<?> contentType();
 
 	/**
 	 * Minimal requirements for a content key.
@@ -49,7 +49,7 @@ public interface Content {
 		 *
 		 * @return
 		 */
-		public Content.Type<T> getContentType();
+		public Content.Type<T> contentType();
 	}
 
 	/**

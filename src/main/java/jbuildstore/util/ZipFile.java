@@ -37,7 +37,7 @@ import jbuildstore.core.Content;
 public class ZipFile<K extends Content.Key<V>, V extends Content> implements Content, Content.Source<K, V> {
 
 	public static <K extends Content.Key<V>, V extends Content> Content.Type<ZipFile<K, V>> ContentType(
-			jbuildstore.core.Key.EncoderDecoder<K, String> encdec) {
+			jbuildstore.core.Key.Mapping<K, String> encdec) {
 		return new Content.Type<>() {
 			@Override
 			public ZipFile<K,V> read(InputStream input) throws IOException {
@@ -88,7 +88,7 @@ public class ZipFile<K extends Content.Key<V>, V extends Content> implements Con
 	 *
 	 * @param input
 	 */
-	public ZipFile(Content.Type<?> contentType, jbuildstore.core.Key.EncoderDecoder<K, String> encdec,
+	public ZipFile(Content.Type<?> contentType, jbuildstore.core.Key.Mapping<K, String> encdec,
 			InputStream input) throws IOException {
 		this.contentType = contentType;
 		this.entries = new ArrayList<>();
@@ -110,7 +110,7 @@ public class ZipFile<K extends Content.Key<V>, V extends Content> implements Con
 	}
 
 	@Override
-	public Content.Type<?> getContentType() {
+	public Content.Type<?> contentType() {
 		return contentType;
 	}
 
@@ -187,7 +187,7 @@ public class ZipFile<K extends Content.Key<V>, V extends Content> implements Con
 		public V get() {
 			try {
 				if (value == null) {
-					value = key.getContentType().read(getInputStream());
+					value = key.contentType().read(getInputStream());
 				}
 				return value;
 			} catch (IOException e) {

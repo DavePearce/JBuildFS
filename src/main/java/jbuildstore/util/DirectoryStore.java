@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import jbuildstore.core.Content;
 import jbuildstore.core.Key;
@@ -39,14 +38,14 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content> impleme
 	};
 	private final File dir;
 	private final FileFilter filter;
-	private final Key.EncoderDecoder<K, String> encdec;
+	private final Key.Mapping<K, String> encdec;
 	private final ArrayList<Entry> items;
 
-	public DirectoryStore(Key.EncoderDecoder<K, String> encdec, File dir) throws IOException {
+	public DirectoryStore(Key.Mapping<K, String> encdec, File dir) throws IOException {
 		this(encdec, dir, NULL_FILTER);
 	}
 
-	public DirectoryStore(Key.EncoderDecoder<K, String> encdec, File dir, FileFilter filter) throws IOException {
+	public DirectoryStore(Key.Mapping<K, String> encdec, File dir, FileFilter filter) throws IOException {
 		if(encdec == null) {
 			throw new IllegalArgumentException("Content encoder/decoder is required");
 		}
@@ -154,7 +153,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content> impleme
 		}
 		// NOTE: yes, there is unsafe stuff going on here because we cannot easily type
 		// this in Java.
-		Content.Type ct = value.getContentType();
+		Content.Type ct = value.contentType();
 		// Update state
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
@@ -283,7 +282,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content> impleme
 				if (value == null) {
 					File f = getFile();
 					FileInputStream fin = new FileInputStream(f);
-					value = key.getContentType().read(fin);
+					value = key.contentType().read(fin);
 					fin.close();
 				}
 			} catch (IOException e) {
@@ -315,7 +314,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content> impleme
 				}
 				// File now exists, therefore we can write to it.
 				FileOutputStream fout = new FileOutputStream(f);
-				key.getContentType().write(fout, value);
+				key.contentType().write(fout, value);
 				fout.close();
 			}
 		}

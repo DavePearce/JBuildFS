@@ -13,9 +13,29 @@
 // limitations under the License.
 package jbuildstore.core;
 
-public interface Key {
+import jbuildstore.core.Content.Type;
 
-	public interface Encoder<K, V> {
+/**
+ * A default implementation of <code>Content.Key</code> which wraps some
+ * existing type (e.g. <code>String</code>) up with a corresponding
+ * <code>Content.Type</code>.
+ *
+ * @author David J. Pearce
+ *
+ * @param <S>
+ * @param <T>
+ */
+public class Key<S,T> implements Content.Key<T> {
+	/**
+	 * A key mapping provides a mechanism for mapping between lowlevel key
+	 * representations (e.g. filenames) and instances of <code>Key</code>.
+	 *
+	 * @author David J. Pearce
+	 *
+	 * @param <K>
+	 * @param <V>
+	 */
+	public interface Mapping<K, V> {
 		/**
 		 * Encode a given content type and key into a low-level type (e.g. a filename).
 		 *
@@ -23,9 +43,6 @@ public interface Key {
 		 * @return
 		 */
 		public V encode(K key);
-	}
-
-	public interface Decoder<K, V> {
 		/**
 		 * Decode a low-level type (e.g. a filename) into a key. In the context of a
 		 * filename, for example, this might return its path.
@@ -34,10 +51,46 @@ public interface Key {
 		 * @return
 		 */
 		public K decode(V t);
-
 	}
 
-	public interface EncoderDecoder<K, V> extends Encoder<K, V>, Decoder<K, V> {
+	private final Content.Type<T> contentType;
+	private final S identifier;
 
+	public Key(Content.Type<T> contentType, S key) {
+		if(contentType == null) {
+			throw new IllegalArgumentException("content type cannot be null");
+		} else if(key == null) {
+			throw new IllegalArgumentException("identifier cannot be null");
+		}
+		this.contentType = contentType;
+		this.identifier = key;
+	}
+
+	public S id() {
+		return identifier;
+	}
+
+	@Override
+	public Type<T> contentType() {
+		return contentType;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if(o instanceof Key) {
+			Key<?,?> k = (Key<?,?>) o;
+			return contentType.equals(k.contentType) && identifier.equals(k.identifier);
+		}
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return contentType.hashCode() ^ identifier.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return identifier.toString() + ":" + contentType.toString();
 	}
 }

@@ -20,10 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Predicate;
-
 import jbuildstore.core.Content;
-import jbuildstore.core.Content.Type;
 
 public class HashMapStore<K,V extends Content> implements Content.Store<K,V>, Iterable<Content.Entry<K, V>>{
 	private final HashMap<K,V> map;
@@ -91,6 +88,11 @@ public class HashMapStore<K,V extends Content> implements Content.Store<K,V>, It
 					public V get() {
 						return e.getValue();
 					}
+
+					@Override
+					public String toString() {
+						return e.getKey() + "=" + e.getValue();
+					}
 				};
 			}
 		};
@@ -99,5 +101,10 @@ public class HashMapStore<K,V extends Content> implements Content.Store<K,V>, It
 	@Override
 	public void synchronise() throws IOException {
 		throw new UnsupportedOperationException("implement me");
+	}
+
+	@Override
+	public String toString() {
+		return map.toString();
 	}
 }

@@ -80,7 +80,7 @@ public class TextFile implements Content {
     }
 
 	@Override
-	public Type<? extends TextFile> getContentType() {
+	public Type<? extends TextFile> contentType() {
 		return contentType;
 	}
 
