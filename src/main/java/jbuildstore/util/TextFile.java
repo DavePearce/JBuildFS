@@ -48,7 +48,7 @@ public class TextFile implements Content {
 				// Read all bytes from input stream
 				byte[] bytes = input.readAllBytes();
 				// Convert them into a string
-				return new TextFile(new String(bytes, encoding));
+				return new TextFile(this,new String(bytes, encoding));
 			}
 
 			@Override
@@ -67,9 +67,11 @@ public class TextFile implements Content {
 		};
 	}
 
+	private final Content.Type<? extends TextFile> contentType;
     private final String content;
 
-    public TextFile(String content) {
+    public TextFile(Content.Type<? extends TextFile> contentType, String content) {
+    	this.contentType = contentType;
         this.content = content;
     }
 
@@ -78,9 +80,8 @@ public class TextFile implements Content {
     }
 
 	@Override
-	public Type<?> getContentType() {
-		// TODO Auto-generated method stub
-		return null;
+	public Type<? extends TextFile> getContentType() {
+		return contentType;
 	}
 
     public Line getEnclosingLine(int offset) {
