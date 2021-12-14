@@ -53,21 +53,21 @@ public class Key<S,T> implements Content.Key<T> {
 		public K decode(V t);
 	}
 
+	private final S id;
 	private final Content.Type<T> contentType;
-	private final S identifier;
 
-	public Key(Content.Type<T> contentType, S key) {
-		if(contentType == null) {
-			throw new IllegalArgumentException("content type cannot be null");
-		} else if(key == null) {
+	public Key(S key, Content.Type<T> contentType) {
+		if(key == null) {
 			throw new IllegalArgumentException("identifier cannot be null");
+		} else if(contentType == null) {
+			throw new IllegalArgumentException("content type cannot be null");
 		}
 		this.contentType = contentType;
-		this.identifier = key;
+		this.id = key;
 	}
 
 	public S id() {
-		return identifier;
+		return id;
 	}
 
 	@Override
@@ -79,18 +79,18 @@ public class Key<S,T> implements Content.Key<T> {
 	public boolean equals(Object o) {
 		if(o instanceof Key) {
 			Key<?,?> k = (Key<?,?>) o;
-			return contentType.equals(k.contentType) && identifier.equals(k.identifier);
+			return contentType.equals(k.contentType) && id.equals(k.id);
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return contentType.hashCode() ^ identifier.hashCode();
+		return contentType.hashCode() ^ id.hashCode();
 	}
 
 	@Override
 	public String toString() {
-		return identifier.toString() + ":" + contentType.toString();
+		return id.toString() + ":" + contentType.toString();
 	}
 }

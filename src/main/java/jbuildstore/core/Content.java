@@ -126,7 +126,7 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Source<K, V extends Content> {
+	public interface Source<K> {
 		/**
 		 * Get a given piece of content from this source.
 		 *
@@ -135,7 +135,7 @@ public interface Content {
 		 * @param key
 		 * @return
 		 */
-		public <T extends V, S extends Key<T>> T get(S key) throws IOException;
+		public <T, S extends Key<T>> T get(S key) throws IOException;
 
 		/**
 		 * Get a given piece of content from this source.
@@ -145,7 +145,7 @@ public interface Content {
 		 * @param p
 		 * @return
 		 */
-		public <T extends V, S extends Key<T>> List<T> getAll(Function<K, S> query) throws IOException;
+		public <T, S extends Key<T>> List<T> getAll(Function<K, S> query) throws IOException;
 
 		/**
 		 * Find all content matching a given filter.
@@ -155,31 +155,7 @@ public interface Content {
 		 * @param f
 		 * @return
 		 */
-		public <T extends V, S extends Key<T>> List<S> match(Function<K, S> query);
-	}
-
-	/**
-	 * A ledger is content source which is additionally journaled. That means we can
-	 * see <i>differences</i> between files, rather than just the state of the files
-	 * are they are now. In particular, the ledger provides sequence of
-	 * <i>snapshots</i> which determine the state at different points in time.
-	 *
-	 * @author David J. Pearce
-	 *
-	 */
-	public interface Ledger<K,V extends Content> extends Source<K,V> {
-		/**
-		 * Get the number of snapshots within the ledger.
-		 *
-		 * @return
-		 */
-		public int size();
-
-		/**
-		 * Get a given snapshot from within this ledger. The snapshot handle must be
-		 * between <code>0</code> and <code>size()-1</code>.
-		 */
-		public Source<K,V> get(int snapshot);
+		public <T, S extends Key<T>> List<S> match(Function<K, S> query);
 	}
 
 	/**
@@ -188,7 +164,7 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Sink<K,V extends Content> {
+	public interface Sink<K> {
 		/**
 		 * Write a given piece of content into this sink.
 		 *
@@ -197,7 +173,7 @@ public interface Content {
 		 * @param key
 		 * @param value
 		 */
-		public void put(K key, V value);
+		public void put(K key, Content value);
 
 		/**
 		 * Remove a given piece of content from this sink.
@@ -214,7 +190,7 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Store<K, V extends Content> extends Source<K, V>, Sink<K, V> {
+	public interface Store<K> extends Source<K>, Sink<K> {
 		/**
 		 * Synchronise this root against the underlying medium. This does two things. It
 		 * flushes writes and invalidates items which have changed on disk. Invalidate

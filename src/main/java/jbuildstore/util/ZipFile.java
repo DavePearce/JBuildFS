@@ -34,7 +34,7 @@ import jbuildstore.core.Content;
  * @author David J. Pearce
  *
  */
-public class ZipFile<K extends Content.Key<V>, V extends Content> implements Content, Content.Source<K, V> {
+public class ZipFile<K extends Content.Key<V>, V extends Content> implements Content, Content.Source<K> {
 
 	public static <K extends Content.Key<V>, V extends Content> Content.Type<ZipFile<K, V>> ContentType(
 			jbuildstore.core.Key.Mapping<K, String> encdec) {
@@ -130,7 +130,7 @@ public class ZipFile<K extends Content.Key<V>, V extends Content> implements Con
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends V, S extends Key<T>> T get(S p) {
+	public <T, S extends Key<T>> T get(S p) {
 		for (int i = 0; i != entries.size(); ++i) {
 			Entry<K,?> ith = entries.get(i);
 			if (ith.key.equals(p)) {
@@ -143,7 +143,7 @@ public class ZipFile<K extends Content.Key<V>, V extends Content> implements Con
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends V, S extends Key<T>> List<T> getAll(Function<K, S> query) {
+	public <T, S extends Key<T>> List<T> getAll(Function<K, S> query) {
 		ArrayList<T> rs = new ArrayList<>();
 		for (int i = 0; i != entries.size(); ++i) {
 			Entry<K, ?> ith = entries.get(i);
@@ -156,7 +156,7 @@ public class ZipFile<K extends Content.Key<V>, V extends Content> implements Con
 	}
 
 	@Override
-	public <T extends V, S extends Key<T>> List<S> match(Function<K, S> query) {
+	public <T, S extends Key<T>> List<S> match(Function<K, S> query) {
 		throw new UnsupportedOperationException();
 	}
 

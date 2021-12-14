@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Function;
 import jbuildstore.core.Content;
 
-public class HashMapStore<K,V extends Content> implements Content.Store<K,V>, Iterable<Content.Entry<K, V>>{
+public class HashMapStore<K extends Content.Key<V>, V extends Content> implements Content.Store<K>, Iterable<Content.Entry<K, V>>{
 	private final HashMap<K,V> map;
 
 	public HashMapStore() {
@@ -31,12 +31,12 @@ public class HashMapStore<K,V extends Content> implements Content.Store<K,V>, It
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends V, S extends Content.Key<T>> T get(S key) {
+	public <T, S extends Content.Key<T>> T get(S key) {
 		return (T) map.get(key);
 	}
 
 	@Override
-	public <T extends V, S extends Content.Key<T>> List<T> getAll(Function<K,S> query) throws IOException {
+	public <T, S extends Content.Key<T>> List<T> getAll(Function<K,S> query) throws IOException {
 		ArrayList<T> items = new ArrayList<>();
 		for(Map.Entry<K,V> e : map.entrySet()) {
 			S key = query.apply(e.getKey());
@@ -48,13 +48,17 @@ public class HashMapStore<K,V extends Content> implements Content.Store<K,V>, It
 	}
 
 	@Override
-	public <T extends V, S extends Content.Key<T>> List<S> match(Function<K, S> query) {
+	public <T, S extends Content.Key<T>> List<S> match(Function<K, S> query) {
 		throw new UnsupportedOperationException("implement me");
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public void put(K key, V value) {
-		map.put(key, value);
+	public void put(K key, Content value) {
+		if(key.contentType() != value.contentType()) {
+			throw new IllegalArgumentException("invalid key-value pair");
+		}
+		map.put(key, (V) value);
 	}
 
 	@Override

@@ -29,7 +29,8 @@ import jbuildstore.core.Key;
  * @author David J. Pearce
  *
  */
-public class DirectoryStore<K extends Content.Key<V>, V extends Content> implements Content.Store<K, V>, Iterable<Content.Entry<K, V>> {
+public class DirectoryStore<K extends Content.Key<V>, V extends Content>
+		implements Content.Store<K>, Iterable<Content.Entry<K, V>> {
 	public final static FileFilter NULL_FILTER = new FileFilter() {
 		@Override
 		public boolean accept(File file) {
@@ -63,7 +64,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content> impleme
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends V, S extends Content.Key<T>> T get(S key) {
+	public <T, S extends Content.Key<T>> T get(S key) {
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
 			if (ith.getKey().equals(key)) {
@@ -75,7 +76,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content> impleme
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends V, S extends Content.Key<T>> List<T> getAll(Function<K,S> query) {
+	public <T, S extends Content.Key<T>> List<T> getAll(Function<K,S> query) {
 		ArrayList<T> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
@@ -89,7 +90,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content> impleme
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends V, S extends Content.Key<T>> List<S> match(Function<K, S> query) {
+	public <T, S extends Content.Key<T>> List<S> match(Function<K, S> query) {
 		ArrayList<S> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
@@ -147,24 +148,24 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content> impleme
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public void put(K key, V value) {
+	public void put(K key, Content value) {
 		if(key == null) {
 			throw new IllegalArgumentException("key required");
+		} else if(key.contentType() != value.contentType()) {
+			throw new IllegalArgumentException("invalid key-value pair");
 		}
 		// NOTE: yes, there is unsafe stuff going on here because we cannot easily type
 		// this in Java.
-		Content.Type ct = value.contentType();
-		// Update state
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
 			if (ith.getKey().equals(key)) {
 				// Yes, overwrite existing entry
-				ith.set(value);
+				ith.set((V) value);
 				return;
 			}
 		}
 		Entry e = new Entry(key);
-		e.set(value);
+		e.set((V) value);
 		// Create new entry
 		items.add(e);
 	}

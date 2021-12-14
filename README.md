@@ -52,6 +52,11 @@ class Point implements Shape {
         ois.writeInt(value.y);
       }
     }
+
+    @Override
+    public String suffix() {
+     return "point";
+    }
   };
 
   public final int x;
@@ -63,7 +68,7 @@ class Point implements Shape {
   }
 
   @Override
-  public Type<Point> getContentType() {
+  public Type<Point> contentType() {
     return ContentType;
   }
 }
@@ -85,8 +90,9 @@ following illustrates a simple method for reading a `Point` out of an
 arbitrary source:
 
 ```Java
-Point read(Source<String,Shape> source) throws IOException {
-    return source.get(Point.ContentType, "test");
+Point read(Source<Key<String,Shape>> source) throws IOException {
+    Key<String, Point> k = new Key<>("test", Point.ContentType);
+    return source.get(k);
 }
 ```
 
