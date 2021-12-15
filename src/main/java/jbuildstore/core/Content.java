@@ -43,7 +43,7 @@ public interface Content {
 	 *
 	 * @param <T>
 	 */
-	public interface Key<T> {
+	public interface Key<T extends Content> {
 		/**
 		 * Get the content type identified by this key.
 		 *
@@ -87,7 +87,7 @@ public interface Content {
 	 *
 	 * @param <T>
 	 */
-	public interface Type<T> {
+	public interface Type<T extends Content> {
 		/**
 		 * Physically read the raw bytes from a given input stream and convert into the
 		 * format described by this content type.
@@ -135,7 +135,7 @@ public interface Content {
 		 * @param key
 		 * @return
 		 */
-		public <T, S extends Key<T>> T get(S key) throws IOException;
+		public <T extends Content, S extends Key<T>> T get(S key) throws IOException;
 
 		/**
 		 * Get a given piece of content from this source.
@@ -145,7 +145,7 @@ public interface Content {
 		 * @param p
 		 * @return
 		 */
-		public <T, S extends Key<T>> List<T> getAll(Function<K, S> query) throws IOException;
+		public <T extends Content, S extends Key<T>> List<T> getAll(Function<K, S> query) throws IOException;
 
 		/**
 		 * Find all content matching a given filter.
@@ -155,7 +155,7 @@ public interface Content {
 		 * @param f
 		 * @return
 		 */
-		public <T, S extends Key<T>> List<S> match(Function<K, S> query);
+		public <T extends Content, S extends Key<T>> List<S> match(Function<K, S> query);
 	}
 
 	/**

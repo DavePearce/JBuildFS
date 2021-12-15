@@ -29,8 +29,9 @@ import jbuildstore.core.Key;
  * @author David J. Pearce
  *
  */
-public class DirectoryStore<K extends Content.Key<V>, V extends Content>
-		implements Content.Store<K>, Iterable<Content.Entry<K, V>> {
+public class DirectoryStore<K extends Content.Key<?>>
+		implements Content.Store<K>, Iterable<Content.Entry<K, Content>> {
+
 	public final static FileFilter NULL_FILTER = new FileFilter() {
 		@Override
 		public boolean accept(File file) {
@@ -64,7 +65,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T, S extends Content.Key<T>> T get(S key) {
+	public <T extends Content, S extends Content.Key<T>> T get(S key) {
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
 			if (ith.getKey().equals(key)) {
@@ -76,7 +77,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T, S extends Content.Key<T>> List<T> getAll(Function<K,S> query) {
+	public <T extends Content, S extends Content.Key<T>> List<T> getAll(Function<K,S> query) {
 		ArrayList<T> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
@@ -90,7 +91,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T, S extends Content.Key<T>> List<S> match(Function<K, S> query) {
+	public <T extends Content, S extends Content.Key<T>> List<S> match(Function<K, S> query) {
 		ArrayList<S> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
@@ -141,12 +142,11 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content>
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public Iterator<Content.Entry<K, V>> iterator() {
+	public Iterator<Content.Entry<K, Content>> iterator() {
 		// Add wrapping iterator which forces loading of artifacts.
 		return (Iterator) items.iterator();
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void put(K key, Content value) {
 		if(key == null) {
@@ -160,12 +160,12 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content>
 			Entry ith = items.get(i);
 			if (ith.getKey().equals(key)) {
 				// Yes, overwrite existing entry
-				ith.set((V) value);
+				ith.set(value);
 				return;
 			}
 		}
 		Entry e = new Entry(key);
-		e.set((V) value);
+		e.set(value);
 		// Create new entry
 		items.add(e);
 	}
@@ -218,7 +218,6 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content>
 	 * @return
 	 * @throws IOException
 	 */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private ArrayList<Entry> initialise(File dir, FileFilter filter) throws IOException {
 		java.nio.file.Path root = dir.toPath();
 		// First extract all files rooted in this directory
@@ -252,7 +251,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content>
 	 *
 	 * @param <S>
 	 */
-	private class Entry implements Content.Entry<K,V> {
+	private class Entry implements Content.Entry<K, Content> {
 		/**
 		 * The repository path to which this entry corresponds.
 		 */
@@ -265,7 +264,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content>
 		 * The cached value of this entry. This may be <code>null</code> if the entry
 		 * has been read from disk yet.
 		 */
-		private V value;
+		private Content value;
 
 		public Entry(K key) {
 			this.key = key;
@@ -278,7 +277,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content>
 		}
 
 		@Override
-		public V get() {
+		public Content get() {
 			try {
 				if (value == null) {
 					File f = getFile();
@@ -292,7 +291,7 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content>
 			return value;
 		}
 
-		public void set(V value) {
+		public void set(Content value) {
 			if (this.value != value) {
 				this.dirty = true;
 				this.value = value;
@@ -315,7 +314,8 @@ public class DirectoryStore<K extends Content.Key<V>, V extends Content>
 				}
 				// File now exists, therefore we can write to it.
 				FileOutputStream fout = new FileOutputStream(f);
-				key.contentType().write(fout, value);
+				Content.Type ct = value.contentType();
+				ct.write(fout, value);
 				fout.close();
 			}
 		}

@@ -25,7 +25,7 @@ import jbuildstore.core.Content.Type;
  * @param <S>
  * @param <T>
  */
-public class Key<S,T> implements Content.Key<T> {
+public class Key<S,T extends Content> implements Content.Key<T> {
 	/**
 	 * A key mapping provides a mechanism for mapping between lowlevel key
 	 * representations (e.g. filenames) and instances of <code>Key</code>.

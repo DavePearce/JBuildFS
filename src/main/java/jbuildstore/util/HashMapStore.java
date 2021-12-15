@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.function.Function;
 import jbuildstore.core.Content;
 
-public class HashMapStore<K extends Content.Key<V>, V extends Content> implements Content.Store<K>, Iterable<Content.Entry<K, V>>{
-	private final HashMap<K,V> map;
+public class HashMapStore<K extends Content.Key<?>> implements Content.Store<K>, Iterable<Content.Entry<K, Content>> {
+	private final HashMap<K,Content> map;
 
 	public HashMapStore() {
 		this.map = new HashMap<>();
@@ -31,14 +31,14 @@ public class HashMapStore<K extends Content.Key<V>, V extends Content> implement
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T, S extends Content.Key<T>> T get(S key) {
+	public <T extends Content, S extends Content.Key<T>> T get(S key) {
 		return (T) map.get(key);
 	}
 
 	@Override
-	public <T, S extends Content.Key<T>> List<T> getAll(Function<K,S> query) throws IOException {
+	public <T extends Content, S extends Content.Key<T>> List<T> getAll(Function<K,S> query) throws IOException {
 		ArrayList<T> items = new ArrayList<>();
-		for(Map.Entry<K,V> e : map.entrySet()) {
+		for(Map.Entry<K,Content> e : map.entrySet()) {
 			S key = query.apply(e.getKey());
 			if (key != null) {
 				items.add((T) e.getValue());
@@ -48,7 +48,7 @@ public class HashMapStore<K extends Content.Key<V>, V extends Content> implement
 	}
 
 	@Override
-	public <T, S extends Content.Key<T>> List<S> match(Function<K, S> query) {
+	public <T extends Content, S extends Content.Key<T>> List<S> match(Function<K, S> query) {
 		throw new UnsupportedOperationException("implement me");
 	}
 
@@ -58,7 +58,7 @@ public class HashMapStore<K extends Content.Key<V>, V extends Content> implement
 		if(key.contentType() != value.contentType()) {
 			throw new IllegalArgumentException("invalid key-value pair");
 		}
-		map.put(key, (V) value);
+		map.put(key, value);
 	}
 
 	@Override
@@ -67,8 +67,8 @@ public class HashMapStore<K extends Content.Key<V>, V extends Content> implement
 	}
 
 	@Override
-	public Iterator<Content.Entry<K, V>> iterator() {
-		final Iterator<Map.Entry<K,V>> iter = map.entrySet().iterator();
+	public Iterator<Content.Entry<K, Content>> iterator() {
+		final Iterator<Map.Entry<K, Content>> iter = map.entrySet().iterator();
 		//
 		return new Iterator<>() {
 
@@ -78,10 +78,10 @@ public class HashMapStore<K extends Content.Key<V>, V extends Content> implement
 			}
 
 			@Override
-			public jbuildstore.core.Content.Entry<K, V> next() {
-				Map.Entry<K, V> e = iter.next();
+			public jbuildstore.core.Content.Entry<K, Content> next() {
+				Map.Entry<K, Content> e = iter.next();
 				//
-				return new Content.Entry<K, V>() {
+				return new Content.Entry<K, Content>() {
 
 					@Override
 					public K getKey() {
@@ -89,7 +89,7 @@ public class HashMapStore<K extends Content.Key<V>, V extends Content> implement
 					}
 
 					@Override
-					public V get() {
+					public Content get() {
 						return e.getValue();
 					}
 

@@ -34,21 +34,21 @@ import jbuildstore.core.Content;
  * @author David J. Pearce
  *
  */
-public class ZipFile<K extends Content.Key<V>, V extends Content> implements Content, Content.Source<K> {
+public class ZipFile<K extends Content.Key<?>> implements Content, Content.Source<K> {
 
-	public static <K extends Content.Key<V>, V extends Content> Content.Type<ZipFile<K, V>> ContentType(
+	public static <K extends Content.Key<?>> Content.Type<ZipFile<K>> ContentType(
 			jbuildstore.core.Key.Mapping<K, String> encdec) {
 		return new Content.Type<>() {
 			@Override
-			public ZipFile<K,V> read(InputStream input) throws IOException {
+			public ZipFile<K> read(InputStream input) throws IOException {
 				return new ZipFile<>(this, encdec, input);
 			}
 
 			@Override
-			public void write(OutputStream output, ZipFile<K,V> zf) throws IOException {
+			public void write(OutputStream output, ZipFile<K> zf) throws IOException {
 				ZipOutputStream zout = new ZipOutputStream(output);
 				for (int i = 0; i != zf.size(); ++i) {
-					ZipFile.Entry<K,V> e = zf.get(i);
+					ZipFile.Entry<K> e = zf.get(i);
 					// Create filename
 					String filename = encdec.encode(e.key);
 					zout.putNextEntry(new ZipEntry(filename));
@@ -73,7 +73,7 @@ public class ZipFile<K extends Content.Key<V>, V extends Content> implements Con
 	/**
 	 * Contains the list of entries in the zip file.
 	 */
-	private final List<Entry<K, V>> entries;
+	private final List<Entry<K>> entries;
 
 	/**
 	 * Construct an empty ZipFile
@@ -124,15 +124,15 @@ public class ZipFile<K extends Content.Key<V>, V extends Content> implements Con
 	 * @param i
 	 * @return
 	 */
-	public Entry<K,V> get(int i) {
+	public Entry<K> get(int i) {
 		return entries.get(i);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T, S extends Key<T>> T get(S p) {
+	public <T extends Content, S extends Key<T>> T get(S p) {
 		for (int i = 0; i != entries.size(); ++i) {
-			Entry<K,?> ith = entries.get(i);
+			Entry<K> ith = entries.get(i);
 			if (ith.key.equals(p)) {
 				return (T) ith.get();
 			}
@@ -143,10 +143,10 @@ public class ZipFile<K extends Content.Key<V>, V extends Content> implements Con
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T, S extends Key<T>> List<T> getAll(Function<K, S> query) {
+	public <T extends Content, S extends Key<T>> List<T> getAll(Function<K, S> query) {
 		ArrayList<T> rs = new ArrayList<>();
 		for (int i = 0; i != entries.size(); ++i) {
-			Entry<K, ?> ith = entries.get(i);
+			Entry<K> ith = entries.get(i);
 			S k = query.apply(ith.key);
 			if (k != null) {
 				rs.add((T) ith.get());
@@ -156,7 +156,7 @@ public class ZipFile<K extends Content.Key<V>, V extends Content> implements Con
 	}
 
 	@Override
-	public <T, S extends Key<T>> List<S> match(Function<K, S> query) {
+	public <T extends Content, S extends Key<T>> List<S> match(Function<K, S> query) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -174,17 +174,17 @@ public class ZipFile<K extends Content.Key<V>, V extends Content> implements Con
 		return buffer.toByteArray();
 	}
 
-	private final static class Entry<K extends Content.Key<V>, V extends Content> {
+	private final static class Entry<K extends Content.Key<?>> {
 		public final K key;
 		public final byte[] bytes;
-		public V value;
+		public Content value;
 
 		public Entry(K key, byte[] bytes) {
 			this.key = key;
 			this.bytes = bytes;
 		}
 
-		public V get() {
+		public Content get() {
 			try {
 				if (value == null) {
 					value = key.contentType().read(getInputStream());
