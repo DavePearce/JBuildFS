@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Provides various interfaces for mapping the structured content held in memory
@@ -43,7 +43,7 @@ public interface Content {
 	 *
 	 * @param <T>
 	 */
-	public interface Key<T extends Content> {
+	public interface Key<S,T extends Content> {
 		/**
 		 * Get the content type identified by this key.
 		 *
@@ -60,7 +60,7 @@ public interface Content {
 	 *
 	 * @param <K>
 	 */
-	public interface Entry<K, T> {
+	public interface Entry<K> {
 		/**
 		 * Get the identifing key for this particular piece of content.
 		 *
@@ -75,7 +75,7 @@ public interface Content {
 		 * @param kind
 		 * @return
 		 */
-		public T get();
+		public Content get();
 	}
 
 	/**
@@ -135,7 +135,7 @@ public interface Content {
 		 * @param key
 		 * @return
 		 */
-		public <T extends Content, S extends Key<T>> T get(S key) throws IOException;
+		public <T extends Content> T get(Key<K,T> key) throws IOException;
 
 		/**
 		 * Get a given piece of content from this source.
@@ -145,7 +145,7 @@ public interface Content {
 		 * @param p
 		 * @return
 		 */
-		public <T extends Content, S extends Key<T>> List<T> getAll(Function<K, S> query) throws IOException;
+		public <T extends Content> List<T> getAll(Predicate<Key<K,?>> query) throws IOException;
 
 		/**
 		 * Find all content matching a given filter.
@@ -155,7 +155,7 @@ public interface Content {
 		 * @param f
 		 * @return
 		 */
-		public <T extends Content, S extends Key<T>> List<S> match(Function<K, S> query);
+		public <T extends Content> List<Key<K, T>> match(Predicate<Key<K,?>> query);
 	}
 
 	/**
@@ -164,7 +164,7 @@ public interface Content {
 	 * @author David J. Pearce
 	 *
 	 */
-	public interface Sink<K> {
+	public interface Sink<S> {
 		/**
 		 * Write a given piece of content into this sink.
 		 *
@@ -173,13 +173,13 @@ public interface Content {
 		 * @param key
 		 * @param value
 		 */
-		public void put(K key, Content value);
+		public <T extends Content> void put(Content.Key<S,T> key, T value);
 
 		/**
 		 * Remove a given piece of content from this sink.
 		 * @param key
 		 */
-		public void remove(K key);
+		public void remove(Content.Key<S, ?> key);
 	}
 
 	/**

@@ -20,10 +20,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import jbuildstore.core.Content;
+import java.util.function.Predicate;
 
-public class HashMapStore<K extends Content.Key<?>> implements Content.Store<K>, Iterable<Content.Entry<K, Content>> {
-	private final HashMap<K,Content> map;
+import jbuildstore.core.Content;
+import jbuildstore.core.Key;
+
+public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry<Content.Key<S, ?>>> {
+	private final HashMap<Content.Key<S, ?>, Content> map;
 
 	public HashMapStore() {
 		this.map = new HashMap<>();
@@ -31,16 +34,15 @@ public class HashMapStore<K extends Content.Key<?>> implements Content.Store<K>,
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Content, S extends Content.Key<T>> T get(S key) {
+	public <T extends Content> T get(Content.Key<S, T> key) {
 		return (T) map.get(key);
 	}
 
 	@Override
-	public <T extends Content, S extends Content.Key<T>> List<T> getAll(Function<K,S> query) throws IOException {
+	public <T extends Content> List<T> getAll(Predicate<Content.Key<S,?>> query) throws IOException {
 		ArrayList<T> items = new ArrayList<>();
-		for(Map.Entry<K,Content> e : map.entrySet()) {
-			S key = query.apply(e.getKey());
-			if (key != null) {
+		for(Map.Entry<Content.Key<S,?>,Content> e : map.entrySet()) {
+			if(query.test(e.getKey())) {
 				items.add((T) e.getValue());
 			}
 		}
@@ -48,13 +50,12 @@ public class HashMapStore<K extends Content.Key<?>> implements Content.Store<K>,
 	}
 
 	@Override
-	public <T extends Content, S extends Content.Key<T>> List<S> match(Function<K, S> query) {
+	public <T extends Content> List<Content.Key<S, T>> match(Predicate<Content.Key<S, ?>> query) {
 		throw new UnsupportedOperationException("implement me");
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public void put(K key, Content value) {
+	public <T extends Content> void put(Content.Key<S,T> key, T value) {
 		if(key.contentType() != value.contentType()) {
 			throw new IllegalArgumentException("invalid key-value pair");
 		}
@@ -62,13 +63,13 @@ public class HashMapStore<K extends Content.Key<?>> implements Content.Store<K>,
 	}
 
 	@Override
-	public void remove(K key) {
+	public void remove(Content.Key<S,?> key) {
 		map.remove(key);
 	}
 
 	@Override
-	public Iterator<Content.Entry<K, Content>> iterator() {
-		final Iterator<Map.Entry<K, Content>> iter = map.entrySet().iterator();
+	public Iterator<Content.Entry<Content.Key<S,?>>> iterator() {
+		final Iterator<Map.Entry<Content.Key<S, ?>, Content>> iter = map.entrySet().iterator();
 		//
 		return new Iterator<>() {
 
@@ -78,13 +79,13 @@ public class HashMapStore<K extends Content.Key<?>> implements Content.Store<K>,
 			}
 
 			@Override
-			public jbuildstore.core.Content.Entry<K, Content> next() {
-				Map.Entry<K, Content> e = iter.next();
+			public jbuildstore.core.Content.Entry<Content.Key<S, ?>> next() {
+				Map.Entry<Content.Key<S, ?>, Content> e = iter.next();
 				//
-				return new Content.Entry<K, Content>() {
+				return new Content.Entry<>() {
 
 					@Override
-					public K getKey() {
+					public Content.Key<S, ?> getKey() {
 						return e.getKey();
 					}
 
