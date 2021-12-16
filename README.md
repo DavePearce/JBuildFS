@@ -82,7 +82,7 @@ binary form).
 
 #### Sources
 
-A content source is an instance of `Content.Source<K,V>`, and provides
+A content source is an instance of `Content.Source<K>`, and provides
 an API for reading structured content out of a store.  Content sources
 (and sinks) are hierarchically structured into a tree-like
 organisation (roughly similar to that of a file system).  The
@@ -90,7 +90,7 @@ following illustrates a simple method for reading a `Point` out of an
 arbitrary source:
 
 ```Java
-Point read(Source<Key<String,Shape>> source) throws IOException {
+Point read(Source<String>> source) throws IOException {
     Key<String, Point> k = new Key<>("test", Point.ContentType);
     return source.get(k);
 }
@@ -102,10 +102,10 @@ the given source.
 #### Queries
 
 Sources can be _queried_ arbitrarily using instances of
-`Content.Filter` as follows:
+`Predicate` as follows:
 
 ```Java
-List<Point> select(Source<String,Shape> source, Filter<Point> query) throws IOException {
+List<Point> select(Source<String> source, Predicate<Key<String,?>> query) throws IOException {
     return source.getAll(query);
 }
 ```
