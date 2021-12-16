@@ -19,14 +19,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jbuildstore.core.Content;
-import jbuildstore.core.Key;
+import jbuildstore.core.Content.Key;
 
-public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry<Content.Key<S, ?>>> {
-	private final HashMap<Content.Key<S, ?>, Content> map;
+public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry<Key<S, ?>>> {
+	private final HashMap<Key<S, ?>, Content> map;
 
 	public HashMapStore() {
 		this.map = new HashMap<>();
@@ -34,14 +33,14 @@ public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Content> T get(Content.Key<S, T> key) {
+	public <T extends Content> T get(Key<S, T> key) {
 		return (T) map.get(key);
 	}
 
 	@Override
-	public <T extends Content> List<T> getAll(Predicate<Content.Key<S,?>> query) throws IOException {
+	public <T extends Content> List<T> getAll(Predicate<Key<S,?>> query) throws IOException {
 		ArrayList<T> items = new ArrayList<>();
-		for(Map.Entry<Content.Key<S,?>,Content> e : map.entrySet()) {
+		for(Map.Entry<Key<S,?>,Content> e : map.entrySet()) {
 			if(query.test(e.getKey())) {
 				items.add((T) e.getValue());
 			}
@@ -50,12 +49,12 @@ public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry
 	}
 
 	@Override
-	public <T extends Content> List<Content.Key<S, T>> match(Predicate<Content.Key<S, ?>> query) {
+	public <T extends Content> List<Key<S, T>> match(Predicate<Key<S, ?>> query) {
 		throw new UnsupportedOperationException("implement me");
 	}
 
 	@Override
-	public <T extends Content> void put(Content.Key<S,T> key, T value) {
+	public <T extends Content> void put(Key<S,T> key, T value) {
 		if(key.contentType() != value.contentType()) {
 			throw new IllegalArgumentException("invalid key-value pair");
 		}
@@ -63,13 +62,13 @@ public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry
 	}
 
 	@Override
-	public void remove(Content.Key<S,?> key) {
+	public void remove(Key<S,?> key) {
 		map.remove(key);
 	}
 
 	@Override
-	public Iterator<Content.Entry<Content.Key<S,?>>> iterator() {
-		final Iterator<Map.Entry<Content.Key<S, ?>, Content>> iter = map.entrySet().iterator();
+	public Iterator<Content.Entry<Key<S,?>>> iterator() {
+		final Iterator<Map.Entry<Key<S, ?>, Content>> iter = map.entrySet().iterator();
 		//
 		return new Iterator<>() {
 
@@ -79,13 +78,13 @@ public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry
 			}
 
 			@Override
-			public jbuildstore.core.Content.Entry<Content.Key<S, ?>> next() {
-				Map.Entry<Content.Key<S, ?>, Content> e = iter.next();
+			public jbuildstore.core.Content.Entry<Key<S, ?>> next() {
+				Map.Entry<Key<S, ?>, Content> e = iter.next();
 				//
 				return new Content.Entry<>() {
 
 					@Override
-					public Content.Key<S, ?> getKey() {
+					public Key<S, ?> getKey() {
 						return e.getKey();
 					}
 

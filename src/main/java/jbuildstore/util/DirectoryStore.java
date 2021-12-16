@@ -17,11 +17,11 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jbuildstore.core.Content;
-import jbuildstore.core.Key;
+import jbuildstore.core.Content.Key;
+import jbuildstore.core.Key.Mapping;
 
 /**
  * Provides an implementation of <code>Content.Store<K,V></code> which is backed
@@ -31,7 +31,7 @@ import jbuildstore.core.Key;
  *
  */
 public class DirectoryStore<S>
-		implements Content.Store<S>, Iterable<Content.Entry<Content.Key<S, ?>>> {
+		implements Content.Store<S>, Iterable<Content.Entry<Key<S, ?>>> {
 
 	public final static FileFilter NULL_FILTER = new FileFilter() {
 		@Override
@@ -41,14 +41,14 @@ public class DirectoryStore<S>
 	};
 	private final File dir;
 	private final FileFilter filter;
-	private final Key.Mapping<Content.Key<S, ?>, String> encdec;
+	private final Mapping<Key<S, ?>, String> encdec;
 	private final ArrayList<Entry> items;
 
-	public DirectoryStore(Key.Mapping<Content.Key<S, ?>, String> encdec, File dir) throws IOException {
+	public DirectoryStore(Mapping<Key<S, ?>, String> encdec, File dir) throws IOException {
 		this(encdec, dir, NULL_FILTER);
 	}
 
-	public DirectoryStore(Key.Mapping<Content.Key<S, ?>, String> encdec, File dir, FileFilter filter) throws IOException {
+	public DirectoryStore(Mapping<Key<S, ?>, String> encdec, File dir, FileFilter filter) throws IOException {
 		if(encdec == null) {
 			throw new IllegalArgumentException("Content encoder/decoder is required");
 		}
@@ -66,7 +66,7 @@ public class DirectoryStore<S>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Content> T get(Content.Key<S, T> key) {
+	public <T extends Content> T get(Key<S, T> key) {
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
 			if (ith.getKey().equals(key)) {
@@ -78,7 +78,7 @@ public class DirectoryStore<S>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Content> List<T> getAll(Predicate<Content.Key<S,?>> query) {
+	public <T extends Content> List<T> getAll(Predicate<Key<S,?>> query) {
 		ArrayList<T> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
@@ -91,13 +91,13 @@ public class DirectoryStore<S>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Content> List<Content.Key<S, T>> match(Predicate<Content.Key<S, ?>> query) {
-		ArrayList<Content.Key<S, T>> rs = new ArrayList<>();
+	public <T extends Content> List<Key<S, T>> match(Predicate<Key<S, ?>> query) {
+		ArrayList<Key<S, T>> rs = new ArrayList<>();
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
 			if (query.test(ith.getKey())) {
 				// Following must be safe!
-				rs.add((Content.Key) ith.getKey());
+				rs.add((Key) ith.getKey());
 			}
 		}
 		return rs;
@@ -113,7 +113,7 @@ public class DirectoryStore<S>
 			// Construct filename
 			String filename = root.relativize(f.toPath()).toString().replace(File.separatorChar, '/');
 			// Decode filename into path and content type.
-			Content.Key<S, ?> key = encdec.decode(filename);
+			Key<S, ?> key = encdec.decode(filename);
 			// Check whether this file is recognised or not
 			if (key != null) {
 				// Search for this item
@@ -141,13 +141,13 @@ public class DirectoryStore<S>
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public Iterator<Content.Entry<Content.Key<S, ?>>> iterator() {
+	public Iterator<Content.Entry<Key<S, ?>>> iterator() {
 		// Add wrapping iterator which forces loading of artifacts.
 		return (Iterator) items.iterator();
 	}
 
 	@Override
-	public <T extends Content> void put(Content.Key<S, T> key, T value) {
+	public <T extends Content> void put(Key<S, T> key, T value) {
 		if(key == null) {
 			throw new IllegalArgumentException("key required");
 		} else if(key.contentType() != value.contentType()) {
@@ -170,7 +170,7 @@ public class DirectoryStore<S>
 	}
 
 	@Override
-	public void remove(Content.Key<S, ?> key) {
+	public void remove(Key<S, ?> key) {
 		// Update state
 		for (int i = 0; i != items.size(); ++i) {
 			Entry ith = items.get(i);
@@ -229,7 +229,7 @@ public class DirectoryStore<S>
 			String filename = root.relativize(ith.toPath()).toString().replace(File.separatorChar, '/');
 			// Decode filename into path and content type.
 			// Decode filename into path and content type.
-			Content.Key<S,?> key = encdec.decode(filename);
+			Key<S,?> key = encdec.decode(filename);
 			if (key != null) {
 				// Create lazy artifact
 				entries.add(new Entry(key));
@@ -250,11 +250,11 @@ public class DirectoryStore<S>
 	 *
 	 * @param <S>
 	 */
-	private class Entry implements Content.Entry<Content.Key<S, ?>> {
+	private class Entry implements Content.Entry<Key<S, ?>> {
 		/**
 		 * The repository path to which this entry corresponds.
 		 */
-		private final Content.Key<S,?> key;
+		private final Key<S,?> key;
 		/**
 		 * Indicates whether this entry has been modified or not.
 		 */
@@ -265,13 +265,13 @@ public class DirectoryStore<S>
 		 */
 		private Content value;
 
-		public Entry(Content.Key<S, ?> key) {
+		public Entry(Key<S, ?> key) {
 			this.key = key;
 			this.dirty = false;
 		}
 
 		@Override
-		public Content.Key<S, ?> getKey() {
+		public Key<S, ?> getKey() {
 			return key;
 		}
 
