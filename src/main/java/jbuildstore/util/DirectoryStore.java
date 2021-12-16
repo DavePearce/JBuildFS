@@ -113,7 +113,7 @@ public class DirectoryStore<S>
 			// Construct filename
 			String filename = root.relativize(f.toPath()).toString().replace(File.separatorChar, '/');
 			// Decode filename into path and content type.
-			S key = encdec.decode(filename);
+			Content.Key<S, ?> key = encdec.decode(filename);
 			// Check whether this file is recognised or not
 			if (key != null) {
 				// Search for this item
@@ -229,7 +229,7 @@ public class DirectoryStore<S>
 			String filename = root.relativize(ith.toPath()).toString().replace(File.separatorChar, '/');
 			// Decode filename into path and content type.
 			// Decode filename into path and content type.
-			S key = encdec.decode(filename);
+			Content.Key<S,?> key = encdec.decode(filename);
 			if (key != null) {
 				// Create lazy artifact
 				entries.add(new Entry(key));
