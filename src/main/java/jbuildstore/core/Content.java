@@ -37,22 +37,6 @@ public interface Content {
 	public Content.Type<?> contentType();
 
 	/**
-	 * Minimal requirements for a content key.
-	 *
-	 * @author David J. Pearce
-	 *
-	 * @param <T>
-	 */
-	public interface Key<S,T extends Content> {
-		/**
-		 * Get the content type identified by this key.
-		 *
-		 * @return
-		 */
-		public Content.Type<T> contentType();
-	}
-
-	/**
 	 * Identifies a given piece of content in a store of some kind, and provides an
 	 * API for reading / writing it.
 	 *
@@ -173,13 +157,13 @@ public interface Content {
 		 * @param key
 		 * @param value
 		 */
-		public <T extends Content> void put(Content.Key<S,T> key, T value);
+		public <T extends Content> void put(Key<S,T> key, T value);
 
 		/**
 		 * Remove a given piece of content from this sink.
 		 * @param key
 		 */
-		public void remove(Content.Key<S, ?> key);
+		public void remove(Key<S, ?> key);
 	}
 
 	/**

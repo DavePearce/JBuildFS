@@ -20,8 +20,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import jbuildstore.core.Content;
-import jbuildstore.core.Content.Key;
-import jbuildstore.core.Key.Mapping;
+import jbuildstore.core.Key;
 
 /**
  * Provides an implementation of <code>Content.Store<K,V></code> which is backed
@@ -41,14 +40,14 @@ public class DirectoryStore<S>
 	};
 	private final File dir;
 	private final FileFilter filter;
-	private final Mapping<Key<S, ?>, String> encdec;
+	private final Key.Map<S, String> encdec;
 	private final ArrayList<Entry> items;
 
-	public DirectoryStore(Mapping<Key<S, ?>, String> encdec, File dir) throws IOException {
+	public DirectoryStore(Key.Map<S, String> encdec, File dir) throws IOException {
 		this(encdec, dir, NULL_FILTER);
 	}
 
-	public DirectoryStore(Mapping<Key<S, ?>, String> encdec, File dir, FileFilter filter) throws IOException {
+	public DirectoryStore(Key.Map<S, String> encdec, File dir, FileFilter filter) throws IOException {
 		if(encdec == null) {
 			throw new IllegalArgumentException("Content encoder/decoder is required");
 		}

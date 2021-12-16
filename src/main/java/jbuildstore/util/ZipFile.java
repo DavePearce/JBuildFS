@@ -26,6 +26,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import jbuildstore.core.Content;
+import jbuildstore.core.Key;
 
 /**
  * A shim for handling ZipFiles in a uniform fashion within the Whiley File
@@ -37,7 +38,7 @@ import jbuildstore.core.Content;
 public class ZipFile<S> implements Content, Content.Source<S> {
 
 	public static <S> Content.Type<ZipFile<S>> ContentType(
-			jbuildstore.core.Key.Mapping<Key<S, ?>, String> encdec) {
+			jbuildstore.core.Key.Map<S, String> encdec) {
 		return new Content.Type<>() {
 			@Override
 			public ZipFile<S> read(InputStream input) throws IOException {
@@ -88,7 +89,7 @@ public class ZipFile<S> implements Content, Content.Source<S> {
 	 *
 	 * @param input
 	 */
-	public ZipFile(Content.Type<?> contentType, jbuildstore.core.Key.Mapping<Key<S, ?>, String> encdec,
+	public ZipFile(Content.Type<?> contentType, Key.Map<S, String> encdec,
 			InputStream input) throws IOException {
 		this.contentType = contentType;
 		this.entries = new ArrayList<>();

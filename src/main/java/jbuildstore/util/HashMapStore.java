@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import jbuildstore.core.Content;
-import jbuildstore.core.Content.Key;
+import jbuildstore.core.Key;
 
 public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry<Key<S, ?>>> {
 	private final HashMap<Key<S, ?>, Content> map;
