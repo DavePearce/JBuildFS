@@ -174,7 +174,7 @@ public class ZipFile<S> implements Content, Content.Source<S> {
 		return buffer.toByteArray();
 	}
 
-	private final static class Entry<S> implements Content.Entry<Key<S, ?>> {
+	private final static class Entry<S> implements Content.Entry<S> {
 		public final Key<S, ?> key;
 		public final byte[] bytes;
 		public Content value;

@@ -24,7 +24,7 @@ import java.util.function.Predicate;
 import jbuildstore.core.Content;
 import jbuildstore.core.Key;
 
-public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry<Key<S, ?>>> {
+public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry<S>> {
 	private final HashMap<Key<S, ?>, Content> map;
 
 	public HashMapStore() {
@@ -67,7 +67,7 @@ public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry
 	}
 
 	@Override
-	public Iterator<Content.Entry<Key<S,?>>> iterator() {
+	public Iterator<Content.Entry<S>> iterator() {
 		final Iterator<Map.Entry<Key<S, ?>, Content>> iter = map.entrySet().iterator();
 		//
 		return new Iterator<>() {
@@ -78,7 +78,7 @@ public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry
 			}
 
 			@Override
-			public jbuildstore.core.Content.Entry<Key<S, ?>> next() {
+			public jbuildstore.core.Content.Entry<S> next() {
 				Map.Entry<Key<S, ?>, Content> e = iter.next();
 				//
 				return new Content.Entry<>() {

@@ -30,7 +30,7 @@ import jbuildstore.core.Key;
  *
  */
 public class DirectoryStore<S>
-		implements Content.Store<S>, Iterable<Content.Entry<Key<S, ?>>> {
+		implements Content.Store<S>, Iterable<Content.Entry<S>> {
 
 	public final static FileFilter NULL_FILTER = new FileFilter() {
 		@Override
@@ -140,7 +140,7 @@ public class DirectoryStore<S>
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public Iterator<Content.Entry<Key<S, ?>>> iterator() {
+	public Iterator<Content.Entry<S>> iterator() {
 		// Add wrapping iterator which forces loading of artifacts.
 		return (Iterator) items.iterator();
 	}
@@ -249,7 +249,7 @@ public class DirectoryStore<S>
 	 *
 	 * @param <S>
 	 */
-	private class Entry implements Content.Entry<Key<S, ?>> {
+	private class Entry implements Content.Entry<S> {
 		/**
 		 * The repository path to which this entry corresponds.
 		 */

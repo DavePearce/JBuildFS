@@ -44,13 +44,13 @@ public interface Content {
 	 *
 	 * @param <K>
 	 */
-	public interface Entry<K> {
+	public interface Entry<S> {
 		/**
 		 * Get the identifing key for this particular piece of content.
 		 *
 		 * @return
 		 */
-		public K getKey();
+		public Key<S,?> getKey();
 
 		/**
 		 * Read this particular piece of content.
