@@ -38,7 +38,7 @@ public interface Content {
 
 	/**
 	 * Identifies a given piece of content in a store of some kind, and provides an
-	 * API for reading / writing it.
+	 * API for reading it.
 	 *
 	 * @author David J. Pearce
 	 *
@@ -46,7 +46,7 @@ public interface Content {
 	 */
 	public interface Entry<S> {
 		/**
-		 * Get the identifing key for this particular piece of content.
+		 * Get the identifying key for this particular piece of content.
 		 *
 		 * @return
 		 */
