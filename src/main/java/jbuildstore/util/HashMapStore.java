@@ -50,7 +50,13 @@ public class HashMapStore<S> implements Content.Store<S>, Iterable<Content.Entry
 
 	@Override
 	public <T extends Content> List<Key<S, T>> match(Predicate<Key<S, ?>> query) {
-		throw new UnsupportedOperationException("implement me");
+		ArrayList<Key<S, T>> items = new ArrayList<>();
+		for(Map.Entry<Key<S,?>,Content> e : map.entrySet()) {
+			if(query.test(e.getKey())) {
+				items.add((Key<S,T>) e.getKey());
+			}
+		}
+		return items;
 	}
 
 	@Override
